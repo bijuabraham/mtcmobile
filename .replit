@@ -43,5 +43,5 @@ externalPort = 8081
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["npx", "serve", "project/dist", "-l", "5000"]
+run = ["bash", "-c", "cd server && node unified-server.js"]
 build = ["sh", "-c", "cd project && npm run build:web"]
