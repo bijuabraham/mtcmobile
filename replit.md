@@ -25,9 +25,9 @@ Preferred communication style: Simple, everyday language.
 
 **State Management**:
 - React Context API for global state (no Redux or external state libraries)
-- `AuthContext` manages user authentication state and session
+- `AuthContext` manages user authentication state and session via JWT tokens
 - `ChurchConfigContext` provides church-specific branding and configuration
-- Real-time subscription to configuration changes via Supabase channels
+- Configuration loaded from API on app start
 
 **UI/Styling Approach**:
 - React Native StyleSheet for component styling (no CSS-in-JS libraries)
@@ -38,29 +38,40 @@ Preferred communication style: Simple, everyday language.
 
 ### Backend Architecture
 
-**Database**: Supabase (PostgreSQL)
-- Serverless PostgreSQL database hosted on Supabase
-- Real-time subscriptions for live data updates
-- Row-level security policies for data access control
+**Database**: Replit PostgreSQL
+- PostgreSQL database hosted on Replit infrastructure
+- Managed via environment variables (DATABASE_URL, PGHOST, PGUSER, etc.)
+- Connection pooling via pg library
 
-**Authentication**: Supabase Auth
-- Email/password authentication strategy
-- Session management with automatic token refresh
-- User creation and password updates via Supabase Edge Functions
+**Backend Server**: Node.js with Express (port 3000)
+- RESTful API endpoints for all app data
+- Location: `server/server.js`
+- CORS enabled for cross-origin requests from frontend
 
-**Data Models**:
+**Authentication**: JWT-based Custom Auth
+- Email/password authentication with bcrypt hashing
+- JWT tokens for session management (expires in 7 days)
+- Tokens stored in AsyncStorage on mobile app
+- Password change requires current password verification
+
+**API Endpoints**:
+- `POST /api/auth/login`: User login with email/password
+- `POST /api/auth/signup`: User registration (admin-only)
+- `PUT /api/auth/change-password`: Update user password
+- `GET /api/config`: Fetch church configuration
+- `GET /api/members`: Get all church members
+- `GET /api/donations`: Get user donations
+- `GET /api/announcements`: Get active announcements
+- `GET /api/contacts`: Get church contact information
+
+**Data Models** (server/schema.sql):
+- `users`: User accounts with hashed passwords
 - `church_configurations`: White-label branding and API endpoints (singleton pattern)
 - `households`: Family/household information with contact details
 - `members`: Individual church members linked to households
 - `donations`: User donation records with categories and payment methods
 - `announcements`: Church-wide announcements with date-based visibility
 - `contact_us`: Church staff contact information with display ordering
-- `user_settings`: User-specific preferences (notifications, language)
-
-**Edge Functions** (Deno runtime):
-- `create-user`: Admin function for creating user accounts
-- `update-user-password`: Admin function for password resets
-- `get-calendar-events`: Fetches and parses Google Calendar iCal feeds
 
 ### White-Label Configuration Strategy
 
@@ -72,44 +83,41 @@ Preferred communication style: Simple, everyday language.
 
 **Deployment Model**:
 - One codebase serves multiple churches
-- Each deployment connects to different Supabase project via environment variables
-- Configuration determines church-specific behavior and appearance
+- Single backend API and frontend deployed together
+- Configuration stored in database determines church-specific behavior and appearance
 - No code changes required for new church deployments
 
 ### Data Flow Patterns
 
 **Authentication Flow**:
-1. User credentials submitted to Supabase Auth
-2. Session token stored in local storage (Expo SecureStore on native)
-3. AuthContext propagates user state throughout app
-4. Route guards redirect based on authentication status
+1. User credentials submitted to `/api/auth/login` endpoint
+2. JWT token returned and stored in AsyncStorage
+3. Token included in Authorization header for all API requests
+4. AuthContext propagates user state throughout app
+5. Route guards redirect based on authentication status
 
 **Data Fetching Pattern**:
-- Direct Supabase client queries from component hooks
+- API client (`project/lib/api.ts`) handles all backend communication
 - Loading states managed locally in components
 - Error handling with Alert dialogs
 - Pull-to-refresh functionality on key screens
 
-**Real-time Updates**:
-- Church configuration changes broadcast via Supabase channels
-- Automatic re-render when configuration updates
-- Members and household data fetched on-demand (no real-time subscriptions)
+**Data Flow**:
+- All data fetched via RESTful API endpoints
+- Configuration loaded on app start
+- Members and household data fetched on-demand
 
 ## External Dependencies
 
 ### Primary Services
 
-**Supabase** (Backend-as-a-Service)
-- PostgreSQL database hosting
-- User authentication and session management
-- Edge Functions runtime (Deno)
-- Real-time subscriptions via WebSocket channels
-- Row-level security for data access control
-- Configuration via environment variables: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+**Replit PostgreSQL**
+- PostgreSQL database hosting on Replit infrastructure
+- Managed via environment variables (DATABASE_URL, PGHOST, etc.)
+- Direct database connection from Node.js backend
 
-**Google Calendar**
-- Public iCal feed integration for church events
-- Fetched server-side via Edge Function to parse iCal format
+**Google Calendar** (Future Integration)
+- Public iCal feed integration for church events planned
 - Calendar ID stored in church configuration
 - No direct Google API authentication required (public calendars only)
 
@@ -126,8 +134,8 @@ Preferred communication style: Simple, everyday language.
 - `@react-navigation/bottom-tabs` (^7.2.0): Tab navigation
 
 **Authentication & Data**:
-- `@supabase/supabase-js` (^2.58.0): Supabase client library
-- `react-native-url-polyfill` (^2.0.0): URL API polyfill for React Native
+- `@react-native-async-storage/async-storage`: Local storage for JWT tokens
+- Custom API client (`project/lib/api.ts`) for backend communication
 
 **UI Components & Display**:
 - `lucide-react-native` (^0.544.0): Icon library
@@ -146,12 +154,48 @@ Preferred communication style: Simple, everyday language.
 ### External APIs
 
 **Church-Specific Endpoints** (configured per church):
-- `api.iconcmo.com`: Church management API integration (referenced but not actively used)
-- Announcements endpoint: Custom URL for fetching church announcements (legacy, now uses Supabase)
-- Standard Payments URL: External donation processing link
+- Standard Payments URL: External donation processing link (configured in database)
 
 **Third-Party Services**:
 - No payment processing integration (external link only)
 - No push notification service (planned feature)
 - No analytics or crash reporting configured
 - No CDN for asset hosting (Expo asset system)
+
+## Backend NPM Packages
+
+**Server Framework**:
+- `express` (^4.18.2): Web server framework
+- `cors` (^2.8.5): Cross-origin resource sharing
+- `dotenv` (^16.3.1): Environment variable management
+
+**Database**:
+- `pg` (^8.11.3): PostgreSQL client for Node.js
+
+**Authentication**:
+- `jsonwebtoken` (^9.0.2): JWT token generation and verification
+- `bcrypt` (^5.1.1): Password hashing
+
+## Deployment Configuration
+
+**Startup Script** (`start.sh`):
+- Starts backend API server on port 3000
+- Starts Expo frontend on port 5000 (web)
+- Both services run concurrently
+
+**Environment Variables Required**:
+- `DATABASE_URL`: PostgreSQL connection string
+- `PGHOST`, `PGUSER`, `PGPASSWORD`, `PGPORT`, `PGDATABASE`: Database credentials
+- `JWT_SECRET`: Secret key for JWT token signing (auto-generated if not set)
+
+## Recent Changes (October 2025)
+
+**Migration from Supabase to Replit Backend**:
+- Migrated from Supabase BaaS to custom Node.js/Express backend
+- Replaced Supabase Auth with JWT-based authentication
+- Migrated PostgreSQL database from Supabase to Replit
+- Updated all React Native screens to use new API client
+- Removed `@supabase/supabase-js` dependency
+- Added custom API client (`project/lib/api.ts`)
+- Backend API runs on port 3000, frontend on port 5000
+- Both services managed by single workflow via `start.sh`
