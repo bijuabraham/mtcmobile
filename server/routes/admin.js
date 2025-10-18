@@ -4,8 +4,11 @@ const db = require('../db');
 const { keysToCamelCase } = require('../utils/camelCase');
 const multer = require('multer');
 const xlsx = require('xlsx');
+const { authenticateToken } = require('../middleware/auth');
 
 const upload = multer({ storage: multer.memoryStorage() });
+
+router.use(authenticateToken);
 
 router.put('/config', async (req, res) => {
   try {
