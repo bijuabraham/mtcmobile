@@ -1,6 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+const getApiUrl = () => {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+  
+  if (typeof window !== 'undefined' && window.location) {
+    return `${window.location.protocol}//${window.location.host}/api`;
+  }
+  
+  return '/api';
+};
+
+const API_URL = getApiUrl();
 
 class ApiClient {
   private async getToken(): Promise<string | null> {
