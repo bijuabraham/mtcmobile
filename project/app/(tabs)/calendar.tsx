@@ -36,26 +36,25 @@ export default function CalendarScreen() {
       setLoading(true);
       setError('');
 
-      const calendarId = config?.calendarId || 'admin@marthomasf.org';
-      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-      const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+      const calendarId = config?.calendarId;
 
-      if (!supabaseUrl || !supabaseAnonKey) {
-        throw new Error('Supabase configuration missing');
+      if (!calendarId) {
+        setError('Calendar not configured');
+        setEvents([]);
+        setLoading(false);
+        return;
       }
 
-      const url = `${supabaseUrl}/functions/v1/get-calendar-events?calendarId=${encodeURIComponent(calendarId)}`;
+      const timeMin = new Date().toISOString();
+      const maxResults = 20;
 
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${supabaseAnonKey}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?key=AIzaSyBNlYH01_9Hc5S1J9vuFmu2nUqBZJNAXxs&orderBy=startTime&singleEvents=true&timeMin=${encodeURIComponent(timeMin)}&maxResults=${maxResults}`;
+
+      const response = await fetch(url);
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Edge function error:', errorData);
+        const errorData = await response.text();
+        console.error('Google Calendar API error:', errorData);
         throw new Error('Failed to fetch calendar events');
       }
 
@@ -63,7 +62,7 @@ export default function CalendarScreen() {
       setEvents(data.items || []);
     } catch (err) {
       console.error('Calendar error:', err);
-      setError('Failed to load calendar events');
+      setError('Failed to load calendar events. Please check calendar settings.');
       setEvents([]);
     } finally {
       setLoading(false);
@@ -134,14 +133,14 @@ export default function CalendarScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { backgroundColor: primaryColor }]}>
-        {config?.logo_url ? (
-          <Image source={{ uri: config.logo_url }} style={styles.logo} resizeMode="contain" />
+        {config?.logoUrl ? (
+          <Image source={{ uri: config.logoUrl }} style={styles.logo} resizeMode="contain" />
         ) : (
           <View style={[styles.logoPlaceholder, { borderColor: '#FFFFFF' }]}>
             <Text style={styles.logoText}>Church</Text>
           </View>
         )}
-        <Text style={styles.churchName}>{config?.church_name || 'Church Management'}</Text>
+        <Text style={styles.churchName}>{config?.churchName || 'Church Management'}</Text>
         <Text style={styles.headerTitle}>Church Calendar</Text>
         <Text style={styles.headerSubtitle}>Upcoming Events</Text>
       </View>
@@ -180,7 +179,9 @@ export default function CalendarScreen() {
                   <Text style={styles.eventTitle}>{event.summary}</Text>
 
                   {event.description && (
-                    <Text style={styles.eventDescription}>{event.description}</Text>
+                    <Text style={styles.eventDescription} numberOfLines={3}>
+                      {event.description.replace(/<[^>]*>/g, '')}
+                    </Text>
                   )}
 
                   <View style={styles.eventInfo}>
@@ -197,7 +198,9 @@ export default function CalendarScreen() {
                     {event.location && (
                       <View style={styles.eventInfoRow}>
                         <MapPin size={16} color="#666" />
-                        <Text style={styles.eventInfoText}>{event.location}</Text>
+                        <Text style={styles.eventInfoText} numberOfLines={1}>
+                          {event.location}
+                        </Text>
                       </View>
                     )}
                   </View>
@@ -346,6 +349,7 @@ const styles = StyleSheet.create({
   eventInfoText: {
     fontSize: 14,
     color: '#666',
+    flex: 1,
   },
   eventLink: {
     flexDirection: 'row',
