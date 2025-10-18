@@ -1,5 +1,6 @@
 const express = require('express');
 const db = require('../db');
+const { keysToCamelCase } = require('../utils/camelCase');
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ router.get('/', async (req, res) => {
       return res.status(404).json({ error: 'Church configuration not found' });
     }
 
-    res.json(result.rows[0]);
+    res.json(keysToCamelCase(result.rows[0]));
   } catch (error) {
     console.error('Get config error:', error);
     res.status(500).json({ error: 'Failed to get church configuration' });

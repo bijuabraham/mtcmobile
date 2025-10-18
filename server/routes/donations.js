@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { authenticateToken } = require('../middleware/auth');
+const { keysToCamelCase } = require('../utils/camelCase');
 
 const router = express.Router();
 
@@ -19,7 +20,7 @@ router.get('/', authenticateToken, async (req, res) => {
     query += ' ORDER BY donation_date DESC';
 
     const result = await db.query(query, params);
-    res.json(result.rows);
+    res.json(keysToCamelCase(result.rows));
   } catch (error) {
     console.error('Get donations error:', error);
     res.status(500).json({ error: 'Failed to get donations' });

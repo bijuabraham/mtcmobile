@@ -1,5 +1,6 @@
 const express = require('express');
 const db = require('../db');
+const { keysToCamelCase } = require('../utils/camelCase');
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ router.get('/', async (req, res) => {
        ORDER BY display_order ASC, title ASC`
     );
 
-    res.json(result.rows);
+    res.json(keysToCamelCase(result.rows));
   } catch (error) {
     console.error('Get contacts error:', error);
     res.status(500).json({ error: 'Failed to get contacts' });
