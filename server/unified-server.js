@@ -23,7 +23,8 @@ app.use(express.json());
 const adminPath = path.join(__dirname, '..', 'admin');
 app.use('/admin', express.static(adminPath, { 
   dotfiles: 'deny',
-  index: false
+  index: false,
+  extensions: ['html']
 }));
 
 // API routes
