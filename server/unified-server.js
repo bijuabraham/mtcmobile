@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 require('dotenv').config();
 
@@ -18,8 +19,12 @@ const PORT = 5000;
 app.use(cors());
 app.use(express.json());
 
-// Serve admin panel static files BEFORE proxy
-app.use('/admin', express.static('admin'));
+// Serve admin panel static files with absolute path
+const adminPath = path.join(__dirname, '..', 'admin');
+app.use('/admin', express.static(adminPath, { 
+  dotfiles: 'deny',
+  index: false
+}));
 
 // API routes
 app.use('/api/auth', authRoutes);

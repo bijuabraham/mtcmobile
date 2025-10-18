@@ -41,11 +41,7 @@ externalPort = 80
 localPort = 8081
 externalPort = 8081
 
-[[ports]]
-localPort = 40457
-externalPort = 3001
-
 [deployment]
 deploymentTarget = "autoscale"
 run = ["bash", "start-production.sh"]
-build = ["sh", "-c", "cd project && npm run build:web"]
+build = ["bash", "build-production.sh"]
