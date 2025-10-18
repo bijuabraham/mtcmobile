@@ -67,7 +67,12 @@ function updatePreview() {
   previewChurchName.textContent = churchName || 'Church Management';
   
   if (logoUrl) {
-    previewLogo.innerHTML = `<img src="${logoUrl}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: 50%;">`;
+    const img = document.createElement('img');
+    img.src = logoUrl;
+    img.alt = 'Logo';
+    img.style.cssText = 'width: 100%; height: 100%; object-fit: contain; border-radius: 50%;';
+    previewLogo.innerHTML = '';
+    previewLogo.appendChild(img);
   } else {
     previewLogo.textContent = 'Church';
   }

@@ -4,15 +4,82 @@ const db = require('../db');
 const { keysToCamelCase } = require('../utils/camelCase');
 const multer = require('multer');
 const xlsx = require('xlsx');
-const { authenticateToken } = require('../middleware/auth');
+const { requireAdmin } = require('../middleware/adminAuth');
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel'
+    ];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only Excel files (.xlsx, .xls) are allowed'));
+    }
+  }
+});
 
-router.use(authenticateToken);
+router.use(requireAdmin);
+
+function isValidHexColor(color) {
+  return /^#[0-9A-Fa-f]{6}$/.test(color);
+}
+
+function isValidUrl(url) {
+  if (!url) return true;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return false;
+    }
+    const urlString = url.toLowerCase();
+    if (urlString.includes('<script') || urlString.includes('javascript:') || urlString.includes('onerror=')) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 router.put('/config', async (req, res) => {
   try {
     const { churchName, primaryColor, secondaryColor, accentColor, logoUrl, calendarId, apiEndpoints } = req.body;
+
+    if (!churchName || typeof churchName !== 'string' || churchName.trim().length === 0) {
+      return res.status(400).json({ error: 'Church name is required and must be a non-empty string' });
+    }
+
+    if (!primaryColor || !isValidHexColor(primaryColor)) {
+      return res.status(400).json({ error: 'Primary color must be a valid hex color (e.g., #C41E3A)' });
+    }
+
+    if (!secondaryColor || !isValidHexColor(secondaryColor)) {
+      return res.status(400).json({ error: 'Secondary color must be a valid hex color' });
+    }
+
+    if (accentColor && !isValidHexColor(accentColor)) {
+      return res.status(400).json({ error: 'Accent color must be a valid hex color' });
+    }
+
+    if (logoUrl && !isValidUrl(logoUrl)) {
+      return res.status(400).json({ error: 'Logo URL must be a valid HTTPS/HTTP URL' });
+    }
+
+    if (apiEndpoints) {
+      if (apiEndpoints.iconcmo && !isValidUrl(apiEndpoints.iconcmo)) {
+        return res.status(400).json({ error: 'IconCMO URL must be a valid HTTPS/HTTP URL' });
+      }
+      if (apiEndpoints.announcements && !isValidUrl(apiEndpoints.announcements)) {
+        return res.status(400).json({ error: 'Announcements URL must be a valid HTTPS/HTTP URL' });
+      }
+      if (apiEndpoints.standardPayments && !isValidUrl(apiEndpoints.standardPayments)) {
+        return res.status(400).json({ error: 'Standard Payments URL must be a valid HTTPS/HTTP URL' });
+      }
+    }
 
     const result = await db.query(
       `UPDATE church_configurations 
@@ -62,10 +129,30 @@ router.post('/upload/members', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'Excel file is empty' });
     }
 
+    if (data.length > 10000) {
+      return res.status(400).json({ error: 'Too many rows. Maximum 10,000 rows allowed' });
+    }
+
+    const requiredColumns = ['household_id', 'member_id', 'firstname', 'lastname'];
+    const firstRow = data[0];
+    const missingColumns = requiredColumns.filter(col => !(col in firstRow));
+    
+    if (missingColumns.length > 0) {
+      return res.status(400).json({ 
+        error: `Missing required columns: ${missingColumns.join(', ')}` 
+      });
+    }
+
     let inserted = 0;
     let updated = 0;
 
     for (const row of data) {
+      if (!row.household_id || !row.member_id || !row.firstname || !row.lastname) {
+        return res.status(400).json({ 
+          error: `Invalid row: household_id, member_id, firstname, and lastname are required` 
+        });
+      }
+
       const checkResult = await db.query(
         'SELECT member_id FROM members WHERE member_id = $1',
         [row.member_id]
@@ -138,10 +225,30 @@ router.post('/upload/households', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'Excel file is empty' });
     }
 
+    if (data.length > 10000) {
+      return res.status(400).json({ error: 'Too many rows. Maximum 10,000 rows allowed' });
+    }
+
+    const requiredColumns = ['household_id', 'mail_to'];
+    const firstRow = data[0];
+    const missingColumns = requiredColumns.filter(col => !(col in firstRow));
+    
+    if (missingColumns.length > 0) {
+      return res.status(400).json({ 
+        error: `Missing required columns: ${missingColumns.join(', ')}` 
+      });
+    }
+
     let inserted = 0;
     let updated = 0;
 
     for (const row of data) {
+      if (!row.household_id || !row.mail_to) {
+        return res.status(400).json({ 
+          error: `Invalid row: household_id and mail_to are required` 
+        });
+      }
+
       const checkResult = await db.query(
         'SELECT household_id FROM households WHERE household_id = $1',
         [row.household_id]

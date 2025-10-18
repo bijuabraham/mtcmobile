@@ -18,6 +18,7 @@ const PORT = 5000;
 app.use(cors());
 app.use(express.json());
 
+// Serve admin panel static files BEFORE proxy
 app.use('/admin', express.static('admin'));
 
 // API routes
@@ -34,12 +35,15 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Church Management API is running' });
 });
 
-// Proxy all other requests to Expo dev server on port 8081
+// Proxy all other requests (excluding /admin and /api) to Expo dev server on port 8081
 app.use('/', createProxyMiddleware({
   target: 'http://localhost:8081',
   changeOrigin: true,
   ws: true,
-  logLevel: 'silent'
+  logLevel: 'silent',
+  filter: (pathname, req) => {
+    return !pathname.startsWith('/admin') && !pathname.startsWith('/api');
+  }
 }));
 
 // Error handler

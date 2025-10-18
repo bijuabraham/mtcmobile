@@ -60,7 +60,7 @@ router.post('/login', async (req, res) => {
     }
 
     const result = await db.query(
-      'SELECT id, email, password_hash FROM users WHERE email = $1',
+      'SELECT id, email, password_hash, is_admin FROM users WHERE email = $1',
       [email.toLowerCase()]
     );
 
@@ -75,12 +75,13 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    const token = generateToken(user.id);
+    const token = generateToken(user.id, user.is_admin || false);
 
     res.json({
       user: {
         id: user.id,
-        email: user.email
+        email: user.email,
+        isAdmin: user.is_admin || false
       },
       token
     });
