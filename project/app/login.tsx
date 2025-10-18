@@ -46,7 +46,7 @@ export default function LoginScreen() {
     }
   };
 
-  const primaryColor = config?.primary_color || '#C41E3A';
+  const primaryColor = config?.primaryColor || '#C41E3A';
 
   return (
     <KeyboardAvoidingView
@@ -55,14 +55,14 @@ export default function LoginScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.logoContainer}>
-          {config?.logo_url ? (
-            <Image source={{ uri: config.logo_url }} style={styles.logo} resizeMode="contain" />
+          {config?.logoUrl ? (
+            <Image source={{ uri: config.logoUrl }} style={styles.logo} resizeMode="contain" />
           ) : (
             <View style={[styles.logoPlaceholder, { backgroundColor: primaryColor }]}>
               <Text style={styles.logoText}>Church</Text>
             </View>
           )}
-          <Text style={styles.churchName}>{config?.church_name || 'Church Management'}</Text>
+          <Text style={styles.churchName}>{config?.churchName || 'Church Management'}</Text>
         </View>
 
         <View style={styles.formContainer}>

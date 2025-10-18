@@ -5,7 +5,7 @@ echo "🌐 App will be available at: https://${REPLIT_DEV_DOMAIN}"
 
 # Start Expo dev server on port 8081 in the background
 echo "🎨 Starting Expo dev server on port 8081..."
-cd project && EXPO_NO_TELEMETRY=1 BROWSER=none CI=1 npx expo start --web --port 8081 &
+cd project && EXPO_NO_TELEMETRY=1 BROWSER=none npx expo start --web --port 8081 &
 EXPO_PID=$!
 
 # Wait for Expo to be ready
