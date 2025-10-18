@@ -3,7 +3,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator
 import { Calendar, DollarSign, Printer, ExternalLink } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChurchConfig } from '@/contexts/ChurchConfigContext';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { Donation } from '@/types/database';
 
 export default function DonationsScreen() {
@@ -30,14 +30,7 @@ export default function DonationsScreen() {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('donations')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('donation_date', { ascending: false });
-
-      if (error) throw error;
-
+      const data = await api.getDonations();
       setDonations(data || []);
     } catch (err) {
       Alert.alert('Error', 'Failed to load donations');

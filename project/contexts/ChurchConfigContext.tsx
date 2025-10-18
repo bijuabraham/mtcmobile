@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { ChurchConfiguration } from '@/types/database';
 
 interface ChurchConfigContextType {
@@ -21,14 +21,7 @@ export function ChurchConfigProvider({ children }: { children: React.ReactNode }
       setLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase
-        .from('church_configurations')
-        .select('*')
-        .limit(1)
-        .maybeSingle();
-
-      if (fetchError) throw fetchError;
-
+      const data = await api.getConfig();
       setConfig(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load configuration');
@@ -39,25 +32,6 @@ export function ChurchConfigProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     fetchConfig();
-
-    const channel = supabase
-      .channel('church_config_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'church_configurations',
-        },
-        () => {
-          fetchConfig();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   return (

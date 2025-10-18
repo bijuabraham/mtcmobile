@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { Search, Phone, Mail, UserCircle, Home, ChevronRight, ChevronDown, User } from 'lucide-react-native';
 import { useChurchConfig } from '@/contexts/ChurchConfigContext';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { Household, Member } from '@/types/database';
 
 export default function DirectoryScreen() {
@@ -28,15 +28,10 @@ export default function DirectoryScreen() {
   const fetchHouseholds = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('households')
-        .select('*')
-        .order('mail_to', { ascending: true });
-
-      if (error) throw error;
-
-      setHouseholds(data || []);
-      setFilteredHouseholds(data || []);
+      const members = await api.getMembers();
+      const groupedHouseholds: Household[] = [];
+      setHouseholds(groupedHouseholds);
+      setFilteredHouseholds(groupedHouseholds);
     } catch (err) {
       console.error('Failed to load households:', err);
     } finally {
@@ -81,17 +76,12 @@ export default function DirectoryScreen() {
     try {
       setLoadingMembers(prev => new Set(prev).add(householdId));
 
-      const { data, error } = await supabase
-        .from('members')
-        .select('*')
-        .eq('household_id', householdId)
-        .order('firstname', { ascending: true });
-
-      if (error) throw error;
+      const data = await api.getMembers();
+      const filtered = data.filter((m: Member) => m.household_id === householdId);
 
       setHouseholdMembers(prev => ({
         ...prev,
-        [householdId]: data || []
+        [householdId]: filtered || []
       }));
     } catch (err) {
       console.error('Failed to load household members:', err);

@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Users, DollarSign, Calendar, Settings, UserCircle, Phone } from 'lucide-react-native';
 import { useChurchConfig } from '@/contexts/ChurchConfigContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import RenderHTML from 'react-native-render-html';
 import { Announcement } from '@/types/database';
 
@@ -35,21 +35,7 @@ export default function HomeScreen() {
   const fetchAnnouncements = async () => {
     try {
       setLoadingAnnouncement(true);
-
-      const { data, error } = await supabase
-        .from('announcements')
-        .select('*')
-        .eq('is_active', true)
-        .lte('start_date', new Date().toISOString())
-        .gte('end_date', new Date().toISOString())
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching announcements:', error);
-        setAnnouncements([]);
-        return;
-      }
-
+      const data = await api.getAnnouncements();
       setAnnouncements(data || []);
     } catch (err) {
       console.error('Error fetching announcements:', err);

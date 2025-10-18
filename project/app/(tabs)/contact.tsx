@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Linking, ActivityIndicator, Image } from 'react-native';
 import { Phone, Mail } from 'lucide-react-native';
 import { useChurchConfig } from '@/contexts/ChurchConfigContext';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { ContactUs } from '@/types/database';
 
 export default function ContactScreen() {
@@ -19,19 +19,7 @@ export default function ContactScreen() {
   const fetchContacts = async () => {
     try {
       setLoading(true);
-
-      const { data, error } = await supabase
-        .from('contact_us')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching contacts:', error);
-        setContacts([]);
-        return;
-      }
-
+      const data = await api.getContacts();
       setContacts(data || []);
     } catch (err) {
       console.error('Error fetching contacts:', err);

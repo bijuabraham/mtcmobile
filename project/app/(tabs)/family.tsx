@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Alert, Image } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChurchConfig } from '@/contexts/ChurchConfigContext';
-import { supabase } from '@/lib/supabase';
+import { api } from '@/lib/api';
 import { Member } from '@/types/database';
 
 export default function FamilyScreen() {
@@ -22,16 +22,10 @@ export default function FamilyScreen() {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('members')
-        .select('*')
-        .eq('email', user.email)
-        .maybeSingle();
-
-      if (error && error.code !== 'PGRST116') throw error;
-
-      if (data) {
-        setMember(data);
+      const data = await api.getMembers();
+      const userMember = data.find((m: Member) => m.email === user.email);
+      if (userMember) {
+        setMember(userMember);
       }
     } catch (err) {
       Alert.alert('Error', 'Failed to load member information');

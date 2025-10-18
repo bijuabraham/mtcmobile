@@ -3,7 +3,6 @@ import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity, Alert,
 import { Lock, LogOut, User, Bell, Globe } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChurchConfig } from '@/contexts/ChurchConfigContext';
-import { supabase } from '@/lib/supabase';
 import { UserSettings } from '@/types/database';
 
 export default function SettingsScreen() {
@@ -22,7 +21,7 @@ export default function SettingsScreen() {
   const primaryColor = config?.primary_color || '#C41E3A';
 
   const handlePasswordChange = async () => {
-    if (!newPassword || !confirmPassword) {
+    if (!currentPassword || !newPassword || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all password fields');
       return;
     }
@@ -39,7 +38,7 @@ export default function SettingsScreen() {
 
     try {
       setChangingPassword(true);
-      await updatePassword(newPassword);
+      await updatePassword(currentPassword, newPassword);
 
       setCurrentPassword('');
       setNewPassword('');
@@ -67,29 +66,6 @@ export default function SettingsScreen() {
 
   const saveNotificationSettings = async (enabled: boolean) => {
     setNotificationsEnabled(enabled);
-
-    if (!user) return;
-
-    try {
-      const { data: existingSettings } = await supabase
-        .from('user_settings')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (existingSettings) {
-        await supabase
-          .from('user_settings')
-          .update({ notifications_enabled: enabled })
-          .eq('user_id', user.id);
-      } else {
-        await supabase
-          .from('user_settings')
-          .insert([{ user_id: user.id, notifications_enabled: enabled }]);
-      }
-    } catch (err) {
-      Alert.alert('Error', 'Failed to save notification settings');
-    }
   };
 
   return (
