@@ -197,5 +197,21 @@ Preferred communication style: Simple, everyday language.
 - Updated all React Native screens to use new API client
 - Removed `@supabase/supabase-js` dependency
 - Added custom API client (`project/lib/api.ts`)
-- Backend API runs on port 3000, frontend on port 5000
+- Backend API runs on unified server (port 5000)
 - Both services managed by single workflow via `start.sh`
+
+**Admin Web Panel (October 2025)**:
+- Added separate web-based admin panel accessible at `/admin/login.html`
+- Admin panel features:
+  - Church configuration management (name, colors, logo, calendar ID, API endpoints)
+  - Excel file upload for members and households data (bulk import)
+  - Live configuration preview
+  - Role-based access control (admins only)
+- Security features:
+  - JWT tokens include is_admin flag for role verification
+  - Admin middleware validates both token claim and database role
+  - URL validation prevents XSS attacks
+  - Excel upload validation (file type, size limits, required columns)
+- Admin user: john.doe@example.com (is_admin=true)
+- Static files served from `admin/` directory
+- API endpoints: PUT /api/admin/config, POST /api/admin/upload/members, POST /api/admin/upload/households

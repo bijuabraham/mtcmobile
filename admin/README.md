@@ -2,7 +2,11 @@
 
 ## Accessing the Admin Panel
 
-Visit `/admin/login.html` in your browser to access the admin panel.
+**Direct Access**: Visit your app URL with `/admin/login.html` at the end. For example:
+- Local: `http://localhost:5000/admin/login.html`
+- Deployed: `https://your-app-name.replit.app/admin/login.html`
+
+The admin panel is separate from the React Native mobile app and uses a different interface.
 
 **Admin Login Credentials:**
 - Only users with admin privileges can access the admin panel
