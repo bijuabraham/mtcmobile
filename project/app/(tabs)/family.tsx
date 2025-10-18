@@ -11,7 +11,7 @@ export default function FamilyScreen() {
   const { user } = useAuth();
   const { config } = useChurchConfig();
 
-  const primaryColor = config?.primary_color || '#C41E3A';
+  const primaryColor = config?.primaryColor || '#C41E3A';
 
   useEffect(() => {
     fetchMember();
@@ -77,14 +77,14 @@ export default function FamilyScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={[styles.header, { backgroundColor: primaryColor }]}>
-        {config?.logo_url ? (
-          <Image source={{ uri: config.logo_url }} style={styles.logo} resizeMode="contain" />
+        {config?.logoUrl ? (
+          <Image source={{ uri: config.logoUrl }} style={styles.logo} resizeMode="contain" />
         ) : (
           <View style={[styles.logoPlaceholder, { borderColor: '#FFFFFF' }]}>
             <Text style={styles.logoText}>Church</Text>
           </View>
         )}
-        <Text style={styles.churchName}>{config?.church_name || 'Church Management'}</Text>
+        <Text style={styles.churchName}>{config?.churchName || 'Church Management'}</Text>
         <Text style={styles.headerTitle}>My Family</Text>
       </View>
 
@@ -96,7 +96,7 @@ export default function FamilyScreen() {
         <View style={styles.photoContainer}>
           <View style={[styles.photoPlaceholder, { backgroundColor: primaryColor }]}>
             <Text style={styles.photoPlaceholderText}>
-              {member.firstname.charAt(0).toUpperCase()}{member.lastname.charAt(0).toUpperCase()}
+              {member.firstName.charAt(0).toUpperCase()}{member.lastName.charAt(0).toUpperCase()}
             </Text>
           </View>
         </View>
@@ -104,12 +104,12 @@ export default function FamilyScreen() {
         <View style={styles.infoContainer}>
           <View style={styles.infoRow}>
             <Text style={styles.label}>First Name</Text>
-            <Text style={styles.value}>{member.firstname}</Text>
+            <Text style={styles.value}>{member.firstName}</Text>
           </View>
 
           <View style={styles.infoRow}>
             <Text style={styles.label}>Last Name</Text>
-            <Text style={styles.value}>{member.lastname}</Text>
+            <Text style={styles.value}>{member.lastName}</Text>
           </View>
 
           <View style={styles.infoRow}>
@@ -119,12 +119,12 @@ export default function FamilyScreen() {
 
           <View style={styles.infoRow}>
             <Text style={styles.label}>Birth Date</Text>
-            <Text style={styles.value}>{formatDate(member.birth_date)}</Text>
+            <Text style={styles.value}>{formatDate(member.birthDate)}</Text>
           </View>
 
           <View style={styles.infoRow}>
             <Text style={styles.label}>Wedding Date</Text>
-            <Text style={styles.value}>{formatDate(member.wed_date)}</Text>
+            <Text style={styles.value}>{formatDate(member.wedDate)}</Text>
           </View>
 
           <View style={styles.infoRow}>

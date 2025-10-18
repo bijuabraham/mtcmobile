@@ -10,7 +10,7 @@ export default function ContactScreen() {
   const [loading, setLoading] = useState(true);
   const { config } = useChurchConfig();
 
-  const primaryColor = config?.primary_color || '#C41E3A';
+  const primaryColor = config?.primaryColor || '#C41E3A';
 
   useEffect(() => {
     fetchContacts();
@@ -48,14 +48,14 @@ export default function ContactScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={[styles.header, { backgroundColor: primaryColor }]}>
-        {config?.logo_url ? (
-          <Image source={{ uri: config.logo_url }} style={styles.logo} resizeMode="contain" />
+        {config?.logoUrl ? (
+          <Image source={{ uri: config.logoUrl }} style={styles.logo} resizeMode="contain" />
         ) : (
           <View style={[styles.logoPlaceholder, { borderColor: '#FFFFFF' }]}>
             <Text style={styles.logoText}>Church</Text>
           </View>
         )}
-        <Text style={styles.churchName}>{config?.church_name || 'Church Management'}</Text>
+        <Text style={styles.churchName}>{config?.churchName || 'Church Management'}</Text>
         <Text style={styles.headerTitle}>Contact Us</Text>
         <Text style={styles.headerSubtitle}>Get in touch with our team</Text>
       </View>

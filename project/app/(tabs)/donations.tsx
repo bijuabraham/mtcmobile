@@ -15,7 +15,7 @@ export default function DonationsScreen() {
   const { user } = useAuth();
   const { config } = useChurchConfig();
 
-  const primaryColor = config?.primary_color || '#C41E3A';
+  const primaryColor = config?.primaryColor || '#C41E3A';
 
   useEffect(() => {
     fetchDonations();
@@ -44,13 +44,13 @@ export default function DonationsScreen() {
 
     if (startDate) {
       filtered = filtered.filter(
-        (d) => new Date(d.donation_date) >= startDate
+        (d) => new Date(d.donationDate) >= startDate
       );
     }
 
     if (endDate) {
       filtered = filtered.filter(
-        (d) => new Date(d.donation_date) <= endDate
+        (d) => new Date(d.donationDate) <= endDate
       );
     }
 
@@ -95,7 +95,7 @@ export default function DonationsScreen() {
   };
 
   const handleStandardPayments = () => {
-    const url = config?.api_endpoints?.standardPayments || 'https://marthomasf.org/standard-payments/';
+    const url = config?.apiEndpoints?.standardPayments || 'https://marthomasf.org/standard-payments/';
     Linking.openURL(url).catch(() => {
       Alert.alert('Error', 'Unable to open the link');
     });
@@ -112,14 +112,14 @@ export default function DonationsScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { backgroundColor: primaryColor }]}>
-        {config?.logo_url ? (
-          <Image source={{ uri: config.logo_url }} style={styles.logo} resizeMode="contain" />
+        {config?.logoUrl ? (
+          <Image source={{ uri: config.logoUrl }} style={styles.logo} resizeMode="contain" />
         ) : (
           <View style={[styles.logoPlaceholder, { borderColor: '#FFFFFF' }]}>
             <Text style={styles.logoText}>Church</Text>
           </View>
         )}
-        <Text style={styles.churchName}>{config?.church_name || 'Church Management'}</Text>
+        <Text style={styles.churchName}>{config?.churchName || 'Church Management'}</Text>
         <Text style={styles.headerTitle}>Donations</Text>
       </View>
 
@@ -201,7 +201,7 @@ export default function DonationsScreen() {
             <View key={donation.id} style={styles.donationCard}>
               <View style={styles.donationHeader}>
                 <Text style={styles.donationAmount}>{formatCurrency(Number(donation.amount))}</Text>
-                <Text style={styles.donationDate}>{formatDate(donation.donation_date)}</Text>
+                <Text style={styles.donationDate}>{formatDate(donation.donationDate)}</Text>
               </View>
               <View style={styles.donationDetails}>
                 <View style={styles.donationDetailRow}>
@@ -210,7 +210,7 @@ export default function DonationsScreen() {
                 </View>
                 <View style={styles.donationDetailRow}>
                   <Text style={styles.donationDetailLabel}>Payment Method:</Text>
-                  <Text style={styles.donationDetailValue}>{donation.payment_method}</Text>
+                  <Text style={styles.donationDetailValue}>{donation.paymentMethod}</Text>
                 </View>
                 {donation.description && (
                   <View style={styles.donationDetailRow}>

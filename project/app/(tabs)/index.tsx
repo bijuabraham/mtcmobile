@@ -25,8 +25,8 @@ export default function HomeScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
 
-  const primaryColor = config?.primary_color || '#C41E3A';
-  const secondaryColor = config?.secondary_color || '#FFD700';
+  const primaryColor = config?.primaryColor || '#C41E3A';
+  const secondaryColor = config?.secondaryColor || '#FFD700';
 
   useEffect(() => {
     fetchAnnouncements();
@@ -113,19 +113,19 @@ export default function HomeScreen() {
       }
     >
       <View style={[styles.header, { backgroundColor: primaryColor }]}>
-        {config?.logo_url ? (
+        {config?.logoUrl ? (
           <Image
-            source={{ uri: config.logo_url }}
+            source={{ uri: config.logoUrl }}
             style={styles.logo}
             resizeMode="contain"
-            key={config.logo_url}
+            key={config.logoUrl}
           />
         ) : (
           <View style={[styles.logoPlaceholder, { borderColor: '#FFFFFF' }]}>
             <Text style={styles.logoText}>Church</Text>
           </View>
         )}
-        <Text style={styles.churchName}>{config?.church_name || 'Church Management'}</Text>
+        <Text style={styles.churchName}>{config?.churchName || 'Church Management'}</Text>
         <Text style={styles.welcomeText}>Welcome, {user?.email?.split('@')[0]}</Text>
       </View>
 

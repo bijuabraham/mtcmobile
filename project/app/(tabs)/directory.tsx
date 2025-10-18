@@ -15,7 +15,7 @@ export default function DirectoryScreen() {
   const [loadingMembers, setLoadingMembers] = useState<Set<string>>(new Set());
   const { config } = useChurchConfig();
 
-  const primaryColor = config?.primary_color || '#C41E3A';
+  const primaryColor = config?.primaryColor || '#C41E3A';
 
   useEffect(() => {
     fetchHouseholds();
@@ -77,7 +77,7 @@ export default function DirectoryScreen() {
       setLoadingMembers(prev => new Set(prev).add(householdId));
 
       const data = await api.getMembers();
-      const filtered = data.filter((m: Member) => m.household_id === householdId);
+      const filtered = data.filter((m: Member) => m.householdId === householdId);
 
       setHouseholdMembers(prev => ({
         ...prev,
@@ -95,16 +95,16 @@ export default function DirectoryScreen() {
   };
 
   const renderMember = (member: Member) => {
-    const initials = `${member.firstname.charAt(0)}${member.lastname.charAt(0)}`.toUpperCase();
+    const initials = `${member.firstName.charAt(0)}${member.lastName.charAt(0)}`.toUpperCase();
 
     return (
-      <View key={member.member_id} style={styles.memberRow}>
+      <View key={member.memberId} style={styles.memberRow}>
         <View style={[styles.memberAvatar, { backgroundColor: primaryColor }]}>
           <Text style={styles.memberAvatarText}>{initials}</Text>
         </View>
         <View style={styles.memberInfo}>
           <Text style={styles.memberText}>
-            {member.firstname} {member.lastname}
+            {member.firstName} {member.lastName}
           </Text>
           {member.relationship && (
             <Text style={styles.memberRelationship}>{member.relationship}</Text>
@@ -134,15 +134,15 @@ export default function DirectoryScreen() {
       .toUpperCase()
       .slice(0, 2);
 
-    const isExpanded = expandedHouseholds.has(household.household_id);
-    const members = householdMembers[household.household_id] || [];
-    const isLoadingMembers = loadingMembers.has(household.household_id);
+    const isExpanded = expandedHouseholds.has(household.householdId);
+    const members = householdMembers[household.householdId] || [];
+    const isLoadingMembers = loadingMembers.has(household.householdId);
 
     return (
-      <View key={household.household_id} style={styles.memberCard}>
+      <View key={household.householdId} style={styles.memberCard}>
         <TouchableOpacity
           style={styles.memberInfo}
-          onPress={() => toggleHousehold(household.household_id)}
+          onPress={() => toggleHousehold(household.householdId)}
           activeOpacity={0.7}
         >
           <View style={[styles.avatar, { backgroundColor: primaryColor }]}>

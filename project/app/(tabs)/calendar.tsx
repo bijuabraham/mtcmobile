@@ -25,7 +25,7 @@ export default function CalendarScreen() {
   const [error, setError] = useState('');
   const { config } = useChurchConfig();
 
-  const primaryColor = config?.primary_color || '#C41E3A';
+  const primaryColor = config?.primaryColor || '#C41E3A';
 
   useEffect(() => {
     fetchCalendarEvents();
@@ -36,7 +36,7 @@ export default function CalendarScreen() {
       setLoading(true);
       setError('');
 
-      const calendarId = config?.calendar_id || 'admin@marthomasf.org';
+      const calendarId = config?.calendarId || 'admin@marthomasf.org';
       const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
       const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
