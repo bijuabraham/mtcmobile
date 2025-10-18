@@ -10,12 +10,15 @@ const memberRoutes = require('./routes/members');
 const donationRoutes = require('./routes/donations');
 const announcementRoutes = require('./routes/announcements');
 const contactRoutes = require('./routes/contacts');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 const PORT = 5000;
 
 app.use(cors());
 app.use(express.json());
+
+app.use('/admin', express.static('admin'));
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -25,6 +28,7 @@ app.use('/api/members', memberRoutes);
 app.use('/api/donations', donationRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/contacts', contactRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Church Management API is running' });
