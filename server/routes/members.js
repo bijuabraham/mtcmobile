@@ -15,7 +15,7 @@ router.get('/', authenticateToken, async (req, res) => {
         h.donor_id,
         h.prayer_group
       FROM members m
-      LEFT JOIN households h ON m.household_id = h.household_id
+      LEFT JOIN households h ON m.household_id = h.id
       WHERE m.is_visible = true
     `;
     let params = [];
