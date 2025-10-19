@@ -442,6 +442,179 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
   window.location.href = '/admin/login.html';
 });
 
+// Admin Management Functions
+async function loadAdmins() {
+  try {
+    const token = localStorage.getItem('adminToken');
+    const response = await fetch(`${API_BASE}/admin/users/admins`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) throw new Error('Failed to load admins');
+    
+    const admins = await response.json();
+    const adminsList = document.getElementById('adminsList');
+    
+    if (admins.length === 0) {
+      adminsList.innerHTML = '<p style="color: #999; text-align: center;">No administrators found.</p>';
+      return;
+    }
+    
+    adminsList.innerHTML = admins.map(admin => `
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee;">
+        <div>
+          <div style="font-weight: 600; color: #333;">${admin.email}</div>
+          <div style="font-size: 13px; color: #666; margin-top: 4px;">
+            Household: ${admin.householdId || 'Not linked'} | 
+            Added: ${new Date(admin.createdAt).toLocaleDateString()}
+          </div>
+        </div>
+        <button 
+          class="btn-danger" 
+          onclick="revokeAdmin('${admin.id}', '${admin.email}')"
+          style="padding: 6px 14px; font-size: 13px;"
+        >
+          Revoke Access
+        </button>
+      </div>
+    `).join('');
+    
+  } catch (error) {
+    console.error('Error loading admins:', error);
+    document.getElementById('adminsList').innerHTML = 
+      '<p style="color: #c62828; text-align: center;">Failed to load administrators</p>';
+  }
+}
+
+async function loadAllUsers() {
+  try {
+    const token = localStorage.getItem('adminToken');
+    const response = await fetch(`${API_BASE}/admin/users`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) throw new Error('Failed to load users');
+    
+    const users = await response.json();
+    const userSelect = document.getElementById('userSelect');
+    
+    const nonAdminUsers = users.filter(user => !user.isAdmin);
+    
+    userSelect.innerHTML = '<option value="">-- Select a user --</option>' +
+      nonAdminUsers.map(user => 
+        `<option value="${user.id}" data-email="${user.email}" data-household="${user.householdId || 'None'}">${user.email}</option>`
+      ).join('');
+    
+  } catch (error) {
+    console.error('Error loading users:', error);
+    showNotification('Failed to load users', 'error');
+  }
+}
+
+async function revokeAdmin(userId, email) {
+  if (!confirm(`Are you sure you want to revoke admin access for ${email}?`)) {
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('adminToken');
+    const response = await fetch(`${API_BASE}/admin/users/${userId}/admin`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ isAdmin: false })
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to revoke admin access');
+    }
+    
+    showNotification(result.message || 'Admin access revoked successfully');
+    loadAdmins();
+    loadAllUsers();
+  } catch (error) {
+    console.error('Error revoking admin:', error);
+    showNotification(error.message, 'error');
+  }
+}
+
+// User select change handler
+document.getElementById('userSelect').addEventListener('change', (e) => {
+  const selectedOption = e.target.options[e.target.selectedIndex];
+  const infoDiv = document.getElementById('selectedUserInfo');
+  
+  if (selectedOption.value) {
+    document.getElementById('selectedEmail').textContent = selectedOption.dataset.email;
+    document.getElementById('selectedHousehold').textContent = selectedOption.dataset.household;
+    infoDiv.style.display = 'block';
+  } else {
+    infoDiv.style.display = 'none';
+  }
+});
+
+// Grant admin form
+document.getElementById('grantAdminForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const userId = document.getElementById('userSelect').value;
+  const email = document.getElementById('userSelect').options[document.getElementById('userSelect').selectedIndex].dataset.email;
+  
+  if (!userId) {
+    showNotification('Please select a user', 'error');
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('adminToken');
+    const response = await fetch(`${API_BASE}/admin/users/${userId}/admin`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ isAdmin: true })
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to grant admin access');
+    }
+    
+    const resultBox = document.getElementById('grantAdminResult');
+    resultBox.className = 'result-box success';
+    resultBox.textContent = `Admin access granted to ${email}`;
+    
+    showNotification(result.message || 'Admin access granted successfully');
+    
+    document.getElementById('grantAdminForm').reset();
+    document.getElementById('selectedUserInfo').style.display = 'none';
+    
+    loadAdmins();
+    loadAllUsers();
+  } catch (error) {
+    console.error('Error granting admin:', error);
+    const resultBox = document.getElementById('grantAdminResult');
+    resultBox.className = 'result-box error';
+    resultBox.textContent = error.message;
+    showNotification(error.message, 'error');
+  }
+});
+
+// Refresh admins button
+document.getElementById('refreshAdminsBtn').addEventListener('click', () => {
+  loadAdmins();
+  loadAllUsers();
+});
+
 // Load config on page load
 window.addEventListener('load', () => {
   // Check if logged in
@@ -453,4 +626,6 @@ window.addEventListener('load', () => {
   
   loadConfig();
   loadAnnouncements();
+  loadAdmins();
+  loadAllUsers();
 });
