@@ -19,6 +19,7 @@
       <button class="tab-btn" data-tab="members">Members Upload</button>
       <button class="tab-btn" data-tab="households">Households Upload</button>
       <button class="tab-btn" data-tab="donations">Donations Upload</button>
+      <button class="tab-btn" data-tab="admins">Admin Management</button>
     </div>
 
     <!-- Configuration Tab -->
@@ -276,6 +277,48 @@
         </div>
 
         <div id="donationsResult" class="result-box"></div>
+      </div>
+    </div>
+
+    <!-- Admin Management Tab -->
+    <div id="admins-tab" class="tab-content">
+      <h2>Admin Management</h2>
+      <p style="color: #666; margin-bottom: 20px;">Manage administrator access for users. At least one admin must always remain.</p>
+      
+      <!-- Current Admins Section -->
+      <div style="margin-bottom: 40px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h3 style="margin: 0;">Current Administrators</h3>
+          <button type="button" id="refreshAdminsBtn" class="btn-secondary" style="padding: 8px 16px;">Refresh List</button>
+        </div>
+        
+        <div id="adminsList" style="background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <p style="color: #999; text-align: center;">Loading administrators...</p>
+        </div>
+      </div>
+
+      <!-- Grant Admin Access Section -->
+      <div style="margin-bottom: 40px;">
+        <h3>Grant Admin Access</h3>
+        <p style="color: #666; margin-bottom: 15px;">Select a user to grant administrator privileges.</p>
+        
+        <form id="grantAdminForm" style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div class="form-group">
+            <label for="userSelect">Select User</label>
+            <select id="userSelect" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+              <option value="">-- Select a user --</option>
+            </select>
+          </div>
+          
+          <div id="selectedUserInfo" style="display: none; padding: 12px; background: #f0f0f0; border-radius: 6px; margin-bottom: 15px;">
+            <p style="margin: 0; color: #666; font-size: 13px;"><strong>Email:</strong> <span id="selectedEmail"></span></p>
+            <p style="margin: 5px 0 0 0; color: #666; font-size: 13px;"><strong>Household ID:</strong> <span id="selectedHousehold"></span></p>
+          </div>
+          
+          <button type="submit" class="btn-primary">Grant Admin Access</button>
+        </form>
+        
+        <div id="grantAdminResult" class="result-box"></div>
       </div>
     </div>
   </div>
