@@ -488,32 +488,6 @@ async function loadAdmins() {
   }
 }
 
-async function loadAllUsers() {
-  try {
-    const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${API_BASE}/admin/users`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    
-    if (!response.ok) throw new Error('Failed to load users');
-    
-    const users = await response.json();
-    const userSelect = document.getElementById('userSelect');
-    
-    const nonAdminUsers = users.filter(user => !user.isAdmin);
-    
-    userSelect.innerHTML = '<option value="">-- Select a user --</option>' +
-      nonAdminUsers.map(user => 
-        `<option value="${user.id}" data-email="${user.email}" data-household="${user.householdId || 'None'}">${user.email}</option>`
-      ).join('');
-    
-  } catch (error) {
-    console.error('Error loading users:', error);
-    showNotification('Failed to load users', 'error');
-  }
-}
 
 async function revokeAdmin(userId, email) {
   if (!confirm(`Are you sure you want to revoke admin access for ${email}?`)) {
@@ -539,42 +513,48 @@ async function revokeAdmin(userId, email) {
     
     showNotification(result.message || 'Admin access revoked successfully');
     loadAdmins();
-    loadAllUsers();
   } catch (error) {
     console.error('Error revoking admin:', error);
     showNotification(error.message, 'error');
   }
 }
 
-// User select change handler
-document.getElementById('userSelect').addEventListener('change', (e) => {
-  const selectedOption = e.target.options[e.target.selectedIndex];
-  const infoDiv = document.getElementById('selectedUserInfo');
-  
-  if (selectedOption.value) {
-    document.getElementById('selectedEmail').textContent = selectedOption.dataset.email;
-    document.getElementById('selectedHousehold').textContent = selectedOption.dataset.household;
-    infoDiv.style.display = 'block';
-  } else {
-    infoDiv.style.display = 'none';
-  }
-});
-
 // Grant admin form
 document.getElementById('grantAdminForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   
-  const userId = document.getElementById('userSelect').value;
-  const email = document.getElementById('userSelect').options[document.getElementById('userSelect').selectedIndex].dataset.email;
+  const email = document.getElementById('userEmail').value.trim();
   
-  if (!userId) {
-    showNotification('Please select a user', 'error');
+  if (!email) {
+    showNotification('Please enter an email address', 'error');
     return;
   }
   
   try {
     const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${API_BASE}/admin/users/${userId}/admin`, {
+    
+    const usersResponse = await fetch(`${API_BASE}/admin/users`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!usersResponse.ok) {
+      throw new Error('Failed to fetch users');
+    }
+    
+    const users = await usersResponse.json();
+    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    
+    if (!user) {
+      throw new Error('User not found. Please check the email address.');
+    }
+    
+    if (user.isAdmin) {
+      throw new Error('This user is already an administrator.');
+    }
+    
+    const response = await fetch(`${API_BASE}/admin/users/${user.id}/admin`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -596,10 +576,8 @@ document.getElementById('grantAdminForm').addEventListener('submit', async (e) =
     showNotification(result.message || 'Admin access granted successfully');
     
     document.getElementById('grantAdminForm').reset();
-    document.getElementById('selectedUserInfo').style.display = 'none';
     
     loadAdmins();
-    loadAllUsers();
   } catch (error) {
     console.error('Error granting admin:', error);
     const resultBox = document.getElementById('grantAdminResult');
@@ -612,7 +590,6 @@ document.getElementById('grantAdminForm').addEventListener('submit', async (e) =
 // Refresh admins button
 document.getElementById('refreshAdminsBtn').addEventListener('click', () => {
   loadAdmins();
-  loadAllUsers();
 });
 
 // Load config on page load
@@ -627,5 +604,4 @@ window.addEventListener('load', () => {
   loadConfig();
   loadAnnouncements();
   loadAdmins();
-  loadAllUsers();
 });

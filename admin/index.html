@@ -304,15 +304,8 @@
         
         <form id="grantAdminForm" style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
           <div class="form-group">
-            <label for="userSelect">Select User</label>
-            <select id="userSelect" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
-              <option value="">-- Select a user --</option>
-            </select>
-          </div>
-          
-          <div id="selectedUserInfo" style="display: none; padding: 12px; background: #f0f0f0; border-radius: 6px; margin-bottom: 15px;">
-            <p style="margin: 0; color: #666; font-size: 13px;"><strong>Email:</strong> <span id="selectedEmail"></span></p>
-            <p style="margin: 5px 0 0 0; color: #666; font-size: 13px;"><strong>Household ID:</strong> <span id="selectedHousehold"></span></p>
+            <label for="userEmail">Enter Email Address</label>
+            <input type="email" id="userEmail" required placeholder="user@example.com" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
           </div>
           
           <button type="submit" class="btn-primary">Grant Admin Access</button>
