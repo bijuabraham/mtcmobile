@@ -248,3 +248,11 @@ Preferred communication style: Simple, everyday language.
   - Prayer Group → prayer_group (optional)
 - Supports both IconCMO format and standard CSV template format
 - Returns format type in API response for transparency
+
+**Donations Linking (October 2025)**:
+- Added `household_id` column to users table to link users to their households
+- Updated donations API endpoint to fetch donations by household_id instead of user_id
+- Users see all donations for their household (family-based donation tracking)
+- Donations imported via IconCMO Excel upload are automatically linked to households via household_id
+- All API responses use camelCase formatting for consistency
+- Fixed TypeScript interfaces across all database models (Member, Household, Donation)

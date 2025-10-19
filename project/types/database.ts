@@ -50,14 +50,16 @@ export interface Member {
 
 export interface Donation {
   id: string;
-  user_id: string;
+  userId: string | null;
+  householdId: string | null;
+  donorNumber: string | null;
   amount: number;
-  donation_date: string;
+  donationDate: string;
   category: string;
   description: string | null;
-  payment_method: string;
-  created_at: string;
-  updated_at: string;
+  paymentMethod: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface UserSettings {

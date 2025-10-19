@@ -9,8 +9,19 @@ router.get('/', authenticateToken, async (req, res) => {
   try {
     const { start_date, end_date } = req.query;
 
-    let query = 'SELECT * FROM donations WHERE user_id = $1';
-    let params = [req.userId];
+    const userResult = await db.query(
+      'SELECT household_id FROM users WHERE id = $1',
+      [req.userId]
+    );
+
+    if (!userResult.rows.length || !userResult.rows[0].household_id) {
+      return res.json([]);
+    }
+
+    const householdId = userResult.rows[0].household_id;
+
+    let query = 'SELECT * FROM donations WHERE household_id = $1';
+    let params = [householdId];
 
     if (start_date && end_date) {
       query += ' AND donation_date BETWEEN $2 AND $3';
