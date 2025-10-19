@@ -116,6 +116,67 @@ document.getElementById('configForm').addEventListener('submit', async (e) => {
   }
 });
 
+// Helper function to upload with progress tracking
+function uploadWithProgress(url, file, progressContainerId, progressFillId, progressTextId, uploadBtnId) {
+  return new Promise((resolve, reject) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const xhr = new XMLHttpRequest();
+    const progressContainer = document.getElementById(progressContainerId);
+    const progressFill = document.getElementById(progressFillId);
+    const progressText = document.getElementById(progressTextId);
+    const uploadBtn = document.getElementById(uploadBtnId);
+    
+    // Show progress bar and disable button
+    progressContainer.style.display = 'block';
+    uploadBtn.disabled = true;
+    uploadBtn.style.opacity = '0.6';
+    
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) {
+        const percentComplete = Math.round((e.loaded / e.total) * 100);
+        progressFill.style.width = percentComplete + '%';
+        progressText.textContent = `Uploading... ${percentComplete}%`;
+      }
+    });
+    
+    xhr.addEventListener('load', () => {
+      progressText.textContent = 'Processing...';
+      
+      setTimeout(() => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const result = JSON.parse(xhr.responseText);
+          progressContainer.style.display = 'none';
+          uploadBtn.disabled = false;
+          uploadBtn.style.opacity = '1';
+          progressFill.style.width = '0%';
+          resolve(result);
+        } else {
+          const error = JSON.parse(xhr.responseText);
+          progressContainer.style.display = 'none';
+          uploadBtn.disabled = false;
+          uploadBtn.style.opacity = '1';
+          progressFill.style.width = '0%';
+          reject(new Error(error.error || 'Upload failed'));
+        }
+      }, 500);
+    });
+    
+    xhr.addEventListener('error', () => {
+      progressContainer.style.display = 'none';
+      uploadBtn.disabled = false;
+      uploadBtn.style.opacity = '1';
+      progressFill.style.width = '0%';
+      reject(new Error('Network error'));
+    });
+    
+    xhr.open('POST', url);
+    xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('adminToken')}`);
+    xhr.send(formData);
+  });
+}
+
 // Upload members
 document.getElementById('membersUploadForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -128,30 +189,24 @@ document.getElementById('membersUploadForm').addEventListener('submit', async (e
     return;
   }
   
-  const formData = new FormData();
-  formData.append('file', file);
-  
   try {
-    const response = await fetch(`${API_BASE}/admin/upload/members`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-      },
-      body: formData
-    });
-    
-    const result = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(result.error || 'Upload failed');
-    }
+    const result = await uploadWithProgress(
+      `${API_BASE}/admin/upload/members`,
+      file,
+      'membersProgress',
+      'membersProgressFill',
+      'membersProgressText',
+      'membersUploadBtn'
+    );
     
     const resultBox = document.getElementById('membersResult');
     resultBox.className = 'result-box success';
     resultBox.innerHTML = `
       <strong>Upload Successful!</strong><br>
+      Format: ${result.format || 'Standard'}<br>
       ${result.inserted} members inserted<br>
-      ${result.updated} members updated
+      ${result.errors ? result.errors + ' errors<br>' : ''}
+      Total processed: ${result.total}
     `;
     
     showNotification('Members uploaded successfully!');
@@ -177,30 +232,23 @@ document.getElementById('householdsUploadForm').addEventListener('submit', async
     return;
   }
   
-  const formData = new FormData();
-  formData.append('file', file);
-  
   try {
-    const response = await fetch(`${API_BASE}/admin/upload/households`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-      },
-      body: formData
-    });
-    
-    const result = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(result.error || 'Upload failed');
-    }
+    const result = await uploadWithProgress(
+      `${API_BASE}/admin/upload/households`,
+      file,
+      'householdsProgress',
+      'householdsProgressFill',
+      'householdsProgressText',
+      'householdsUploadBtn'
+    );
     
     const resultBox = document.getElementById('householdsResult');
     resultBox.className = 'result-box success';
     resultBox.innerHTML = `
       <strong>Upload Successful!</strong><br>
+      Format: ${result.format || 'Standard'}<br>
       ${result.inserted} households inserted<br>
-      ${result.updated} households updated
+      Total processed: ${result.total}
     `;
     
     showNotification('Households uploaded successfully!');
@@ -345,33 +393,24 @@ document.getElementById('donationsUploadForm').addEventListener('submit', async 
     return;
   }
   
-  const formData = new FormData();
-  formData.append('file', file);
-  
   try {
-    const token = localStorage.getItem('adminToken');
-    const response = await fetch(`${API_BASE}/admin/upload/donations`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      body: formData
-    });
-    
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to upload donations');
-    }
-    
-    const result = await response.json();
+    const result = await uploadWithProgress(
+      `${API_BASE}/admin/upload/donations`,
+      file,
+      'donationsProgress',
+      'donationsProgressFill',
+      'donationsProgressText',
+      'donationsUploadBtn'
+    );
     
     const resultBox = document.getElementById('donationsResult');
     resultBox.className = 'result-box success';
-    resultBox.textContent = `
-      Successfully processed donations file!
-      ${result.inserted} donations inserted
-      ${result.skipped > 0 ? `${result.skipped} rows skipped` : ''}
-      Total rows: ${result.total}
+    resultBox.innerHTML = `
+      <strong>Upload Successful!</strong><br>
+      Format: ${result.format || 'Standard'}<br>
+      ${result.inserted} donations inserted<br>
+      ${result.skipped} rows skipped<br>
+      Total processed: ${result.total}
     `;
     
     showNotification('Donations uploaded successfully!');

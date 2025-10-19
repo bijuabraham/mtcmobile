@@ -239,6 +239,9 @@ router.post('/upload/members', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'Too many rows. Maximum 10,000 rows allowed' });
     }
 
+    // Clear existing members data before importing
+    await db.query('TRUNCATE TABLE members RESTART IDENTITY CASCADE');
+
     let inserted = 0;
     let updated = 0;
     let errors = 0;
@@ -265,49 +268,23 @@ router.post('/upload/members', upload.single('file'), async (req, res) => {
           householdUuid = row.household_id;
         }
 
-        const checkResult = await db.query(
-          'SELECT member_id FROM members WHERE member_id = $1',
-          [row.member_id]
+        await db.query(
+          `INSERT INTO members 
+           (member_id, household_id, first_name, last_name, relationship, birth_date, wed_date, email, phone)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [
+            row.member_id,
+            householdUuid,
+            row.first_name,
+            row.last_name,
+            row.relationship,
+            row.birth_date,
+            row.wed_date,
+            row.email,
+            row.phone
+          ]
         );
-
-        if (checkResult.rows.length > 0) {
-          await db.query(
-            `UPDATE members 
-             SET household_id = $1, first_name = $2, last_name = $3, relationship = $4, 
-                 birth_date = $5, wed_date = $6, email = $7, phone = $8, updated_at = NOW()
-             WHERE member_id = $9`,
-            [
-              householdUuid,
-              row.first_name,
-              row.last_name,
-              row.relationship,
-              row.birth_date,
-              row.wed_date,
-              row.email,
-              row.phone,
-              row.member_id
-            ]
-          );
-          updated++;
-        } else {
-          await db.query(
-            `INSERT INTO members 
-             (member_id, household_id, first_name, last_name, relationship, birth_date, wed_date, email, phone)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-            [
-              row.member_id,
-              householdUuid,
-              row.first_name,
-              row.last_name,
-              row.relationship,
-              row.birth_date,
-              row.wed_date,
-              row.email,
-              row.phone
-            ]
-          );
-          inserted++;
-        }
+        inserted++;
       } catch (rowError) {
         console.error('Error processing member row:', rowError);
         errors++;
@@ -399,6 +376,9 @@ router.post('/upload/households', upload.single('file'), async (req, res) => {
       }
     }
 
+    // Clear existing households data before importing (CASCADE will also clear members)
+    await db.query('TRUNCATE TABLE households RESTART IDENTITY CASCADE');
+
     let inserted = 0;
     let updated = 0;
 
@@ -407,51 +387,27 @@ router.post('/upload/households', upload.single('file'), async (req, res) => {
         continue; // Skip invalid rows instead of failing entire upload
       }
 
-      const checkResult = await db.query(
-        'SELECT household_id FROM households WHERE household_id = $1',
-        [row.household_id]
-      );
-
       // Build full address from components if available
       let fullAddress = row.address || null;
       if (isIconCMOFormat && row.address && row.city && row.state && row.zip) {
         fullAddress = `${row.address}, ${row.city}, ${row.state} ${row.zip}`;
       }
 
-      if (checkResult.rows.length > 0) {
-        await db.query(
-          `UPDATE households 
-           SET family_name = $1, address = $2, phone = $3, email = $4, 
-               prayer_group = $5, donor_id = $6, updated_at = NOW()
-           WHERE household_id = $7`,
-          [
-            row.mail_to,              // family_name (Mail To)
-            fullAddress,              // address
-            row.phone || null,
-            row.email || null,
-            row.prayer_group || null,
-            row.donor_id || row.donor_number || null,
-            row.household_id
-          ]
-        );
-        updated++;
-      } else {
-        await db.query(
-          `INSERT INTO households 
-           (household_id, family_name, address, phone, email, prayer_group, donor_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [
-            row.household_id,
-            row.mail_to,              // family_name (Mail To)
-            fullAddress,              // address
-            row.phone || null,
-            row.email || null,
-            row.prayer_group || null,
-            row.donor_id || row.donor_number || null
-          ]
-        );
-        inserted++;
-      }
+      await db.query(
+        `INSERT INTO households 
+         (household_id, family_name, address, phone, email, prayer_group, donor_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          row.household_id,
+          row.mail_to,              // family_name (Mail To)
+          fullAddress,              // address
+          row.phone || null,
+          row.email || null,
+          row.prayer_group || null,
+          row.donor_id || row.donor_number || null
+        ]
+      );
+      inserted++;
     }
 
     res.json({
@@ -499,6 +455,9 @@ router.post('/upload/donations', upload.single('file'), async (req, res) => {
     if (data.length > 10000) {
       return res.status(400).json({ error: 'Too many rows. Maximum 10,000 rows allowed' });
     }
+
+    // Clear existing donations data before importing
+    await db.query('TRUNCATE TABLE donations RESTART IDENTITY CASCADE');
 
     let inserted = 0;
     let skipped = 0;

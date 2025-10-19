@@ -211,7 +211,9 @@ Preferred communication style: Simple, everyday language.
   - Church configuration management (name, colors, logo, calendar ID, API endpoints)
   - **Announcements management** - Two announcement slots with start/end dates (database-driven)
   - Excel file upload for members, households, and donations data (bulk import)
-  - **IconCMO format auto-detection** for households and donations uploads
+  - **IconCMO format auto-detection** for households, members, and donations uploads
+  - **Full table replacement** - Each upload clears existing data before importing (ensures clean data state)
+  - **Upload progress bars** - Real-time progress tracking during file uploads with percentage display
   - Downloadable CSV templates for members, households, and donations data
   - Live configuration preview
   - Role-based access control (admins only)
@@ -273,8 +275,18 @@ Preferred communication style: Simple, everyday language.
 - All API responses use camelCase formatting for consistency
 - Fixed TypeScript interfaces across all database models (Member, Household, Donation)
 
+**Upload Behavior (October 2025)**:
+- All uploads (households, members, donations) **replace existing data** rather than merging
+- Uploading households clears both households and members tables (CASCADE)
+- Uploading members clears members table only
+- Uploading donations clears donations table only
+- Recommended upload order: 1) Households first, 2) Members second, 3) Donations third
+- This ensures clean data state and prevents orphaned records or duplicates
+
 **Database Status (October 2025)**:
 - 186 households imported from IconCMO system
 - 658 individual members imported and linked to households
+- 2,028 donations imported and linked to households
 - All members successfully linked to their households via Family ID
 - Full IconCMO data integration complete (Households, Individuals, Donations)
+- Admin users: john.doe@example.com, biju.abraham@gmail.com

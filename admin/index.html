@@ -179,8 +179,15 @@
             <label for="membersFile">Select Excel File (.xlsx)</label>
             <input type="file" id="membersFile" name="file" accept=".xlsx,.xls,.csv" required>
           </div>
-          <button type="submit" class="btn-primary">Upload Members</button>
+          <button type="submit" class="btn-primary" id="membersUploadBtn">Upload Members</button>
         </form>
+
+        <div id="membersProgress" class="progress-container" style="display:none;">
+          <div class="progress-bar">
+            <div class="progress-fill" id="membersProgressFill"></div>
+          </div>
+          <div class="progress-text" id="membersProgressText">Uploading... 0%</div>
+        </div>
 
         <div id="membersResult" class="result-box"></div>
       </div>
@@ -216,8 +223,15 @@
             <label for="householdsFile">Select Excel File (.xlsx)</label>
             <input type="file" id="householdsFile" name="file" accept=".xlsx,.xls,.csv" required>
           </div>
-          <button type="submit" class="btn-primary">Upload Households</button>
+          <button type="submit" class="btn-primary" id="householdsUploadBtn">Upload Households</button>
         </form>
+
+        <div id="householdsProgress" class="progress-container" style="display:none;">
+          <div class="progress-bar">
+            <div class="progress-fill" id="householdsProgressFill"></div>
+          </div>
+          <div class="progress-text" id="householdsProgressText">Uploading... 0%</div>
+        </div>
 
         <div id="householdsResult" class="result-box"></div>
       </div>
@@ -251,8 +265,15 @@
             <label for="donationsFile">Select Excel File (.xlsx)</label>
             <input type="file" id="donationsFile" name="file" accept=".xlsx,.xls,.csv" required>
           </div>
-          <button type="submit" class="btn-primary">Upload Donations</button>
+          <button type="submit" class="btn-primary" id="donationsUploadBtn">Upload Donations</button>
         </form>
+
+        <div id="donationsProgress" class="progress-container" style="display:none;">
+          <div class="progress-bar">
+            <div class="progress-fill" id="donationsProgressFill"></div>
+          </div>
+          <div class="progress-text" id="donationsProgressText">Uploading... 0%</div>
+        </div>
 
         <div id="donationsResult" class="result-box"></div>
       </div>
