@@ -333,6 +333,58 @@ document.getElementById('announcementsForm').addEventListener('submit', async (e
 // Load announcements button
 document.getElementById('loadAnnouncementsBtn').addEventListener('click', loadAnnouncements);
 
+// Upload donations
+document.getElementById('donationsUploadForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const fileInput = document.getElementById('donationsFile');
+  const file = fileInput.files[0];
+  
+  if (!file) {
+    showNotification('Please select a file', 'error');
+    return;
+  }
+  
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  try {
+    const token = localStorage.getItem('adminToken');
+    const response = await fetch(`${API_BASE}/admin/upload/donations`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to upload donations');
+    }
+    
+    const result = await response.json();
+    
+    const resultBox = document.getElementById('donationsResult');
+    resultBox.className = 'result-box success';
+    resultBox.textContent = `
+      Successfully processed donations file!
+      ${result.inserted} donations inserted
+      ${result.skipped > 0 ? `${result.skipped} rows skipped` : ''}
+      Total rows: ${result.total}
+    `;
+    
+    showNotification('Donations uploaded successfully!');
+    fileInput.value = '';
+  } catch (error) {
+    console.error('Error uploading donations:', error);
+    const resultBox = document.getElementById('donationsResult');
+    resultBox.className = 'result-box error';
+    resultBox.textContent = error.message;
+    showNotification(error.message, 'error');
+  }
+});
+
 // Logout
 document.getElementById('logoutBtn').addEventListener('click', () => {
   localStorage.removeItem('adminToken');

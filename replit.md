@@ -205,8 +205,8 @@ Preferred communication style: Simple, everyday language.
 - Admin panel features:
   - Church configuration management (name, colors, logo, calendar ID, API endpoints)
   - **Announcements management** - Two announcement slots with start/end dates (database-driven)
-  - Excel file upload for members and households data (bulk import)
-  - Downloadable CSV templates for members and households data
+  - Excel file upload for members, households, and donations data (bulk import)
+  - Downloadable CSV templates for members, households, and donations data
   - Live configuration preview
   - Role-based access control (admins only)
 - Security features:
@@ -221,5 +221,6 @@ Preferred communication style: Simple, everyday language.
   - PUT /api/admin/config
   - POST /api/admin/upload/members
   - POST /api/admin/upload/households
+  - POST /api/admin/upload/donations
   - GET /api/announcements/admin/all
   - POST /api/announcements/admin/save

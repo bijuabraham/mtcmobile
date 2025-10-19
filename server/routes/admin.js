@@ -308,4 +308,78 @@ router.post('/upload/households', upload.single('file'), async (req, res) => {
   }
 });
 
+router.post('/upload/donations', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const data = xlsx.utils.sheet_to_json(worksheet);
+
+    if (data.length === 0) {
+      return res.status(400).json({ error: 'Excel file is empty' });
+    }
+
+    if (data.length > 10000) {
+      return res.status(400).json({ error: 'Too many rows. Maximum 10,000 rows allowed' });
+    }
+
+    const requiredColumns = ['household_id', 'donor_number', 'fund', 'amount'];
+    const firstRow = data[0];
+    const missingColumns = requiredColumns.filter(col => !(col in firstRow));
+    
+    if (missingColumns.length > 0) {
+      return res.status(400).json({ 
+        error: `Missing required columns: ${missingColumns.join(', ')}` 
+      });
+    }
+
+    let inserted = 0;
+    let skipped = 0;
+
+    for (const row of data) {
+      if (!row.household_id || !row.donor_number || !row.fund || !row.amount) {
+        skipped++;
+        continue;
+      }
+
+      const amount = parseFloat(row.amount);
+      if (isNaN(amount)) {
+        return res.status(400).json({ 
+          error: `Invalid amount value: ${row.amount}` 
+        });
+      }
+
+      const donationDate = row.donation_date || new Date().toISOString().split('T')[0];
+
+      await db.query(
+        `INSERT INTO donations 
+         (household_id, donor_number, category, amount, donation_date, updated_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())`,
+        [
+          row.household_id,
+          row.donor_number,
+          row.fund,
+          amount,
+          donationDate
+        ]
+      );
+      inserted++;
+    }
+
+    res.json({
+      success: true,
+      inserted,
+      skipped,
+      total: data.length
+    });
+  } catch (error) {
+    console.error('Upload donations error:', error);
+    res.status(500).json({ error: error.message || 'Failed to upload donations data' });
+  }
+});
+
 module.exports = router;

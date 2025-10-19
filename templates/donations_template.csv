@@ -1,0 +1,7 @@
+household_id,donor_number,fund,amount,donation_date
+H001,D1001,General Fund,500.00,2025-10-01
+H001,D1001,Building Fund,250.00,2025-10-05
+H002,D1002,General Fund,1000.00,2025-10-03
+H003,D1003,Mission Fund,300.00,2025-10-08
+H002,D1002,Building Fund,750.00,2025-10-10
+H004,D1004,General Fund,200.00,2025-10-12

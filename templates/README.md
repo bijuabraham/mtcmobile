@@ -65,12 +65,38 @@ These templates show the required format for uploading member and household data
 - The system will update existing records if the ID already exists
 - Maximum 10,000 rows per file
 
+## Donations Template (`donations_template.csv`)
+
+### Required Columns
+- **household_id**: Household identifier (must match a household_id in households)
+- **donor_number**: Donor ID/number (should match donor_number in households)
+- **fund**: Fund name or category (e.g., "General Fund", "Building Fund", "Mission Fund")
+- **amount**: Donation amount (numeric, can include decimals)
+
+### Optional Columns
+- **donation_date**: Date of donation (format: YYYY-MM-DD). If not provided, current date is used.
+
+### Notes
+- Each row represents one donation transaction
+- The `updated_at` field is automatically set to the current timestamp when uploaded
+- Multiple donations can be recorded for the same household
+- Amount should be numeric (e.g., 500.00, 1000, 250.50)
+- Fund names are free-form text - use consistent naming for reporting
+
 ## Example Data
 
 The template files contain example data showing:
+
+**Households & Members:**
 - A family with both parents and a child (Doe family - H001)
 - A married couple without children (Smith family - H002)  
 - A single person household (Johnson - H003)
 - Another family (Williams - H004)
 
-Replace this example data with your actual church member information.
+**Donations:**
+- Multiple donations from different households
+- Various fund types (General, Building, Mission)
+- Different donation amounts
+- Sample donation dates
+
+Replace this example data with your actual church information.

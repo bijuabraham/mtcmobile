@@ -18,6 +18,7 @@
       <button class="tab-btn" data-tab="announcements">Announcements</button>
       <button class="tab-btn" data-tab="members">Members Upload</button>
       <button class="tab-btn" data-tab="households">Households Upload</button>
+      <button class="tab-btn" data-tab="donations">Donations Upload</button>
     </div>
 
     <!-- Configuration Tab -->
@@ -219,6 +220,41 @@
         </form>
 
         <div id="householdsResult" class="result-box"></div>
+      </div>
+    </div>
+
+    <!-- Donations Upload Tab -->
+    <div id="donations-tab" class="tab-content">
+      <h2>Upload Donations Data</h2>
+      <div class="upload-section">
+        <div class="info-box">
+          <h3>Excel Format Requirements</h3>
+          <p>Your Excel file should have the following columns:</p>
+          <ul>
+            <li><strong>household_id</strong> - Household identifier</li>
+            <li><strong>donor_number</strong> - Donor ID/number</li>
+            <li><strong>fund</strong> - Fund name or category (e.g., "General Fund", "Building Fund")</li>
+            <li><strong>amount</strong> - Donation amount (numeric)</li>
+            <li><strong>donation_date</strong> - Date of donation (YYYY-MM-DD, optional)</li>
+          </ul>
+          <p style="margin-top: 10px; color: #666;">
+            <strong>Note:</strong> The update date will be set automatically when you upload the file.
+          </p>
+        </div>
+
+        <p style="margin-bottom: 15px; padding: 10px; background: #f0f0f0; border-radius: 5px;">
+          📥 <a href="/templates/donations_template.csv" download style="color: #C41E3A; text-decoration: none; font-weight: 500;">Download Donations Template (CSV)</a>
+        </p>
+
+        <form id="donationsUploadForm">
+          <div class="form-group">
+            <label for="donationsFile">Select Excel File (.xlsx)</label>
+            <input type="file" id="donationsFile" name="file" accept=".xlsx,.xls,.csv" required>
+          </div>
+          <button type="submit" class="btn-primary">Upload Donations</button>
+        </form>
+
+        <div id="donationsResult" class="result-box"></div>
       </div>
     </div>
   </div>
