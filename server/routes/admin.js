@@ -532,4 +532,70 @@ router.post('/upload/donations', upload.single('file'), async (req, res) => {
   }
 });
 
+router.get('/users', async (req, res) => {
+  try {
+    const result = await db.query(
+      'SELECT id, email, is_admin, household_id, created_at FROM users ORDER BY email ASC'
+    );
+    
+    const users = result.rows.map(user => keysToCamelCase(user));
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+router.get('/users/admins', async (req, res) => {
+  try {
+    const result = await db.query(
+      'SELECT id, email, household_id, created_at FROM users WHERE is_admin = true ORDER BY email ASC'
+    );
+    
+    const admins = result.rows.map(admin => keysToCamelCase(admin));
+    res.json(admins);
+  } catch (error) {
+    console.error('Error fetching admins:', error);
+    res.status(500).json({ error: 'Failed to fetch admins' });
+  }
+});
+
+router.put('/users/:id/admin', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isAdmin } = req.body;
+    
+    if (typeof isAdmin !== 'boolean') {
+      return res.status(400).json({ error: 'isAdmin must be a boolean value' });
+    }
+    
+    const checkResult = await db.query('SELECT id FROM users WHERE id = $1', [id]);
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const adminCountResult = await db.query('SELECT COUNT(*) as count FROM users WHERE is_admin = true');
+    const adminCount = parseInt(adminCountResult.rows[0].count);
+    
+    if (!isAdmin && adminCount <= 1) {
+      return res.status(400).json({ error: 'Cannot remove the last admin. At least one admin must remain.' });
+    }
+    
+    const result = await db.query(
+      'UPDATE users SET is_admin = $1, updated_at = NOW() WHERE id = $2 RETURNING id, email, is_admin, household_id',
+      [isAdmin, id]
+    );
+    
+    const user = keysToCamelCase(result.rows[0]);
+    res.json({ 
+      success: true, 
+      user,
+      message: isAdmin ? 'Admin access granted' : 'Admin access revoked'
+    });
+  } catch (error) {
+    console.error('Error updating admin status:', error);
+    res.status(500).json({ error: 'Failed to update admin status' });
+  }
+});
+
 module.exports = router;
