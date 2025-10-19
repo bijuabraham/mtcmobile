@@ -94,7 +94,7 @@ export default function DirectoryScreen() {
   };
 
   const renderMember = (member: Member) => {
-    const initials = `${member.firstName.charAt(0)}${member.lastName.charAt(0)}`.toUpperCase();
+    const initials = `${member.firstName.slice(0, 2)}${member.lastName.charAt(0)}`.toUpperCase();
 
     return (
       <View key={member.memberId} style={styles.memberRow}>
@@ -140,7 +140,7 @@ export default function DirectoryScreen() {
       .map(word => word.charAt(0))
       .join('')
       .toUpperCase()
-      .slice(0, 2);
+      .slice(0, 3);
 
     const isExpanded = expandedHouseholds.has(household.id);
     const members = householdMembers[household.id] || [];
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   avatarText: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   memberAvatarText: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },

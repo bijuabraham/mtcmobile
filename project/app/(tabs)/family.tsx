@@ -86,7 +86,7 @@ export default function FamilyScreen() {
   };
 
   const renderMember = (memberData: Member) => {
-    const initials = `${memberData.firstName.charAt(0)}${memberData.lastName.charAt(0)}`.toUpperCase();
+    const initials = `${memberData.firstName.slice(0, 2)}${memberData.lastName.charAt(0)}`.toUpperCase();
 
     return (
       <View key={memberData.memberId} style={styles.memberRow}>
@@ -153,7 +153,7 @@ export default function FamilyScreen() {
         .map(word => word.charAt(0))
         .join('')
         .toUpperCase()
-        .slice(0, 2)
+        .slice(0, 3)
     : '';
 
   return (
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   avatarText: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   memberAvatarText: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
