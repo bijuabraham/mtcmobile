@@ -137,30 +137,42 @@ function uploadWithProgress(url, file, progressContainerId, progressFillId, prog
       if (e.lengthComputable) {
         const percentComplete = Math.round((e.loaded / e.total) * 100);
         progressFill.style.width = percentComplete + '%';
-        progressText.textContent = `Uploading... ${percentComplete}%`;
+        progressFill.textContent = `${percentComplete}%`;
+        progressText.textContent = `Uploading file... ${percentComplete}%`;
       }
     });
     
     xhr.addEventListener('load', () => {
-      progressText.textContent = 'Processing...';
+      // Upload complete, now processing on server
+      progressFill.style.width = '100%';
+      progressFill.textContent = '100%';
+      progressText.textContent = 'Processing data and updating database... This may take a minute for large files.';
+      progressText.style.color = '#764ba2';
+      progressText.style.fontWeight = '600';
       
-      setTimeout(() => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          const result = JSON.parse(xhr.responseText);
-          progressContainer.style.display = 'none';
-          uploadBtn.disabled = false;
-          uploadBtn.style.opacity = '1';
-          progressFill.style.width = '0%';
-          resolve(result);
-        } else {
-          const error = JSON.parse(xhr.responseText);
-          progressContainer.style.display = 'none';
-          uploadBtn.disabled = false;
-          uploadBtn.style.opacity = '1';
-          progressFill.style.width = '0%';
-          reject(new Error(error.error || 'Upload failed'));
-        }
-      }, 500);
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const result = JSON.parse(xhr.responseText);
+        progressContainer.style.display = 'none';
+        uploadBtn.disabled = false;
+        uploadBtn.style.opacity = '1';
+        progressFill.style.width = '0%';
+        progressFill.textContent = '';
+        progressText.textContent = '';
+        progressText.style.color = '#667eea';
+        progressText.style.fontWeight = '500';
+        resolve(result);
+      } else {
+        const error = JSON.parse(xhr.responseText);
+        progressContainer.style.display = 'none';
+        uploadBtn.disabled = false;
+        uploadBtn.style.opacity = '1';
+        progressFill.style.width = '0%';
+        progressFill.textContent = '';
+        progressText.textContent = '';
+        progressText.style.color = '#667eea';
+        progressText.style.fontWeight = '500';
+        reject(new Error(error.error || 'Upload failed'));
+      }
     });
     
     xhr.addEventListener('error', () => {
