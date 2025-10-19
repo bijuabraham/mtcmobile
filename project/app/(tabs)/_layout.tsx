@@ -1,10 +1,10 @@
 import { Tabs } from 'expo-router';
-import { Home, Users, DollarSign, Calendar, Settings, Phone } from 'lucide-react-native';
+import { Home, Users, UserCircle, DollarSign, Calendar, Settings, Phone } from 'lucide-react-native';
 import { useChurchConfig } from '@/contexts/ChurchConfigContext';
 
 export default function TabLayout() {
   const { config } = useChurchConfig();
-  const primaryColor = config?.primary_color || '#C41E3A';
+  const primaryColor = config?.primaryColor || '#C41E3A';
 
   return (
     <Tabs
@@ -33,7 +33,7 @@ export default function TabLayout() {
         name="family"
         options={{
           title: 'Family',
-          tabBarIcon: ({ size, color }) => <Users size={size} color={color} />,
+          tabBarIcon: ({ size, color }) => <UserCircle size={size} color={color} />,
         }}
       />
       <Tabs.Screen
