@@ -127,85 +127,199 @@ router.post('/upload/members', upload.single('file'), async (req, res) => {
     const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
-    const data = xlsx.utils.sheet_to_json(worksheet);
+    const rawData = xlsx.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+
+    if (rawData.length === 0) {
+      return res.status(400).json({ error: 'Excel file is empty' });
+    }
+
+    let data = [];
+    let formatType = 'standard';
+
+    const hasIconCMOHeader = rawData.some((row, idx) => 
+      idx < 10 && Array.isArray(row) && 
+      row.some(cell => typeof cell === 'string' && cell.includes('Family ID'))
+    );
+
+    if (hasIconCMOHeader) {
+      formatType = 'iconcmo';
+      const headerRowIndex = rawData.findIndex(row => 
+        Array.isArray(row) && row[0] === 'Family ID'
+      );
+
+      if (headerRowIndex === -1) {
+        return res.status(400).json({ error: 'Could not find header row in IconCMO format' });
+      }
+
+      const headers = rawData[headerRowIndex];
+      const dataStartIndex = headerRowIndex + 2;
+
+      for (let i = dataStartIndex; i < rawData.length; i++) {
+        const row = rawData[i];
+        if (!row || row.length === 0 || !row[0]) continue;
+
+        const familyId = row[0] ? String(row[0]) : null;
+        const memberId = row[1] ? String(row[1]) : null;
+        const lastName = row[2] || '';
+        const firstName = row[3] || '';
+        const relationship = row[5] || null;
+        const phone = row[6] || null;
+        const email = row[7] || null;
+        const birthMonth = row[8] || null;
+        const birthDay = row[9] || null;
+        const marriageSerial = row[10] || null;
+
+        let birthDate = null;
+        if (birthMonth && birthDay) {
+          const monthMap = {
+            'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6,
+            'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12
+          };
+          const month = monthMap[birthMonth];
+          if (month) {
+            const year = 2000;
+            birthDate = `${year}-${String(month).padStart(2, '0')}-${String(birthDay).padStart(2, '0')}`;
+          }
+        }
+
+        let wedDate = null;
+        if (marriageSerial && typeof marriageSerial === 'number') {
+          const excelEpoch = new Date(1899, 11, 30);
+          const jsDate = new Date(excelEpoch.getTime() + marriageSerial * 86400000);
+          wedDate = jsDate.toISOString().split('T')[0];
+        }
+
+        data.push({
+          family_id: familyId,
+          member_id: memberId,
+          first_name: firstName,
+          last_name: lastName,
+          relationship: relationship,
+          phone: phone,
+          email: email,
+          birth_date: birthDate,
+          wed_date: wedDate
+        });
+      }
+    } else {
+      const jsonData = xlsx.utils.sheet_to_json(worksheet);
+      
+      if (jsonData.length === 0) {
+        return res.status(400).json({ error: 'Excel file is empty' });
+      }
+
+      const requiredColumns = ['household_id', 'member_id', 'first_name', 'last_name'];
+      const firstRow = jsonData[0];
+      const missingColumns = requiredColumns.filter(col => !(col in firstRow));
+      
+      if (missingColumns.length > 0) {
+        return res.status(400).json({ 
+          error: `Missing required columns: ${missingColumns.join(', ')}` 
+        });
+      }
+
+      data = jsonData.map(row => ({
+        household_id: row.household_id,
+        member_id: row.member_id,
+        first_name: row.first_name,
+        last_name: row.last_name,
+        relationship: row.relationship || null,
+        phone: row.phone || null,
+        email: row.email || null,
+        birth_date: row.birth_date || null,
+        wed_date: row.wed_date || null
+      }));
+    }
 
     if (data.length === 0) {
-      return res.status(400).json({ error: 'Excel file is empty' });
+      return res.status(400).json({ error: 'No valid data rows found' });
     }
 
     if (data.length > 10000) {
       return res.status(400).json({ error: 'Too many rows. Maximum 10,000 rows allowed' });
     }
 
-    const requiredColumns = ['household_id', 'member_id', 'firstname', 'lastname'];
-    const firstRow = data[0];
-    const missingColumns = requiredColumns.filter(col => !(col in firstRow));
-    
-    if (missingColumns.length > 0) {
-      return res.status(400).json({ 
-        error: `Missing required columns: ${missingColumns.join(', ')}` 
-      });
-    }
-
     let inserted = 0;
     let updated = 0;
+    let errors = 0;
 
     for (const row of data) {
-      if (!row.household_id || !row.member_id || !row.firstname || !row.lastname) {
-        return res.status(400).json({ 
-          error: `Invalid row: household_id, member_id, firstname, and lastname are required` 
-        });
-      }
+      try {
+        if (!row.member_id || !row.first_name || !row.last_name) {
+          errors++;
+          continue;
+        }
 
-      const checkResult = await db.query(
-        'SELECT member_id FROM members WHERE member_id = $1',
-        [row.member_id]
-      );
+        let householdUuid = null;
+        
+        if (formatType === 'iconcmo' && row.family_id) {
+          const householdResult = await db.query(
+            'SELECT id FROM households WHERE household_id = $1',
+            [row.family_id]
+          );
+          
+          if (householdResult.rows.length > 0) {
+            householdUuid = householdResult.rows[0].id;
+          }
+        } else if (row.household_id) {
+          householdUuid = row.household_id;
+        }
 
-      if (checkResult.rows.length > 0) {
-        await db.query(
-          `UPDATE members 
-           SET household_id = $1, firstname = $2, lastname = $3, relationship = $4, 
-               birth_date = $5, wed_date = $6, email = $7, phone = $8, updated_at = NOW()
-           WHERE member_id = $9`,
-          [
-            row.household_id,
-            row.firstname,
-            row.lastname,
-            row.relationship || null,
-            row.birth_date || null,
-            row.wed_date || null,
-            row.email || null,
-            row.phone || null,
-            row.member_id
-          ]
+        const checkResult = await db.query(
+          'SELECT member_id FROM members WHERE member_id = $1',
+          [row.member_id]
         );
-        updated++;
-      } else {
-        await db.query(
-          `INSERT INTO members 
-           (member_id, household_id, firstname, lastname, relationship, birth_date, wed_date, email, phone)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-          [
-            row.member_id,
-            row.household_id,
-            row.firstname,
-            row.lastname,
-            row.relationship || null,
-            row.birth_date || null,
-            row.wed_date || null,
-            row.email || null,
-            row.phone || null
-          ]
-        );
-        inserted++;
+
+        if (checkResult.rows.length > 0) {
+          await db.query(
+            `UPDATE members 
+             SET household_id = $1, first_name = $2, last_name = $3, relationship = $4, 
+                 birth_date = $5, wed_date = $6, email = $7, phone = $8, updated_at = NOW()
+             WHERE member_id = $9`,
+            [
+              householdUuid,
+              row.first_name,
+              row.last_name,
+              row.relationship,
+              row.birth_date,
+              row.wed_date,
+              row.email,
+              row.phone,
+              row.member_id
+            ]
+          );
+          updated++;
+        } else {
+          await db.query(
+            `INSERT INTO members 
+             (member_id, household_id, first_name, last_name, relationship, birth_date, wed_date, email, phone)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+            [
+              row.member_id,
+              householdUuid,
+              row.first_name,
+              row.last_name,
+              row.relationship,
+              row.birth_date,
+              row.wed_date,
+              row.email,
+              row.phone
+            ]
+          );
+          inserted++;
+        }
+      } catch (rowError) {
+        console.error('Error processing member row:', rowError);
+        errors++;
       }
     }
 
     res.json({
       success: true,
+      format: formatType,
       inserted,
       updated,
+      errors,
       total: data.length
     });
   } catch (error) {
