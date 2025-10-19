@@ -1,294 +1,50 @@
 # Church Management Mobile Application
 
 ## Overview
-
-This is a white-label church management mobile application built with React Native and Expo. The app provides a comprehensive platform for church members to access announcements, manage family information, view church directories, track donations, check calendars, and contact church staff. The application is designed to be fully configurable and deployable for multiple churches with custom branding through a database-driven configuration system.
+This white-label church management mobile application, built with React Native and Expo, provides a comprehensive platform for church members. It allows access to announcements, family information, directories, donation tracking, calendars, and staff contacts. The application is highly configurable and deployable for multiple churches with custom branding via a database-driven system, aiming for broad market potential in church administration.
 
 ## User Preferences
-
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Frontend Architecture
+### Frontend
+- **Framework**: React Native with Expo SDK 54, utilizing Expo Router for file-based, tab-based navigation.
+- **State Management**: React Context API for global state, including `AuthContext` (JWT-based) and `ChurchConfigContext` for dynamic, database-driven branding.
+- **UI/Styling**: React Native StyleSheet with dynamic theming based on church configuration. Uses Lucide React Native for iconography and RenderHTML for rich text. Custom components are used throughout without external UI libraries.
 
-**Framework**: React Native with Expo SDK 54
-- The application uses Expo's managed workflow for simplified development and deployment
-- Expo Router (v6) provides file-based routing with tab-based navigation
-- React 19.1.0 with functional components and hooks throughout
+### Backend
+- **Database**: Replit PostgreSQL, managed via environment variables.
+- **Server**: Node.js with Express (port 3000), providing RESTful API endpoints for all application data.
+- **Authentication**: Custom JWT-based system with email/password (bcrypt hashing) for secure session management.
+- **Data Models**: Key tables include `users`, `church_configurations` (singleton), `households`, `members`, `donations`, `announcements`, and `contact_us`.
+- **Admin Panel**: A separate web-based admin panel (`/admin/login.html`) allows church configuration, announcement management, bulk data uploads (members, households, donations, prayer groups with IconCMO format auto-detection), and admin user management with role-based access control.
 
-**Navigation Structure**:
-- Authentication flow separates logged-in users from guest users
-- Tab-based navigation with 7 main screens: Home, Family, Directory, Donations, Calendar, Contact, and Settings
-- Protected routes redirect unauthenticated users to login screen
-- Route protection implemented in `app/_layout.tsx` using segments-based logic
+### White-Label Configuration
+- **Database-Driven Branding**: A single `church_configurations` table stores all branding and configuration settings (e.g., name, colors, logo, API endpoints). This enables a single codebase to serve multiple churches without code changes for new deployments.
 
-**State Management**:
-- React Context API for global state (no Redux or external state libraries)
-- `AuthContext` manages user authentication state and session via JWT tokens
-- `ChurchConfigContext` provides church-specific branding and configuration
-- Configuration loaded from API on app start
-
-**UI/Styling Approach**:
-- React Native StyleSheet for component styling (no CSS-in-JS libraries)
-- Dynamic theming based on church configuration (primary, secondary, accent colors)
-- Lucide React Native for consistent iconography
-- RenderHTML for displaying rich-text announcements
-- No UI component library - custom components throughout
-
-### Backend Architecture
-
-**Database**: Replit PostgreSQL
-- PostgreSQL database hosted on Replit infrastructure
-- Managed via environment variables (DATABASE_URL, PGHOST, PGUSER, etc.)
-- Connection pooling via pg library
-
-**Backend Server**: Node.js with Express (port 3000)
-- RESTful API endpoints for all app data
-- Location: `server/server.js`
-- CORS enabled for cross-origin requests from frontend
-
-**Authentication**: JWT-based Custom Auth
-- Email/password authentication with bcrypt hashing
-- JWT tokens for session management (expires in 7 days)
-- Tokens stored in AsyncStorage on mobile app
-- Password change requires current password verification
-
-**API Endpoints**:
-- `POST /api/auth/login`: User login with email/password
-- `POST /api/auth/signup`: User registration (admin-only)
-- `PUT /api/auth/change-password`: Update user password
-- `GET /api/config`: Fetch church configuration
-- `GET /api/members`: Get all church members
-- `GET /api/donations`: Get user donations
-- `GET /api/announcements`: Get active announcements
-- `GET /api/contacts`: Get church contact information
-
-**Data Models** (server/schema.sql):
-- `users`: User accounts with hashed passwords
-- `church_configurations`: White-label branding, timezone, and API endpoints (singleton pattern)
-- `households`: Family/household information with contact details
-- `members`: Individual church members linked to households
-- `donations`: User donation records with categories and payment methods
-- `announcements`: Church-wide announcements with date-based visibility
-- `contact_us`: Church staff contact information with display ordering
-
-### White-Label Configuration Strategy
-
-**Database-Driven Branding**:
-- Single `church_configurations` table stores all branding settings
-- Configuration includes: church name, color scheme, logo URL, API endpoints, calendar ID
-- Context provider fetches configuration on app load and subscribes to changes
-- All UI components consume configuration for dynamic theming
-
-**Deployment Model**:
-- One codebase serves multiple churches
-- Single backend API and frontend deployed together
-- Configuration stored in database determines church-specific behavior and appearance
-- No code changes required for new church deployments
-
-### Data Flow Patterns
-
-**Authentication Flow**:
-1. User credentials submitted to `/api/auth/login` endpoint
-2. JWT token returned and stored in AsyncStorage
-3. Token included in Authorization header for all API requests
-4. AuthContext propagates user state throughout app
-5. Route guards redirect based on authentication status
-
-**Data Fetching Pattern**:
-- API client (`project/lib/api.ts`) handles all backend communication
-- Loading states managed locally in components
-- Error handling with Alert dialogs
-- Pull-to-refresh functionality on key screens
-
-**Data Flow**:
-- All data fetched via RESTful API endpoints
-- Configuration loaded on app start
-- Members and household data fetched on-demand
+### Data Flow
+- **Authentication**: Users log in to receive a JWT token, stored in AsyncStorage, and used for subsequent API requests.
+- **Data Fetching**: An API client (`project/lib/api.ts`) handles all backend communication, managing loading states and error handling.
+- **Donation Tracking**: Donations are linked to `households` rather than individual users, allowing family-based tracking.
 
 ## External Dependencies
 
 ### Primary Services
+- **Replit PostgreSQL**: Database hosting for the backend.
+- **Google Calendar**: Planned integration for public iCal feeds.
 
-**Replit PostgreSQL**
-- PostgreSQL database hosting on Replit infrastructure
-- Managed via environment variables (DATABASE_URL, PGHOST, etc.)
-- Direct database connection from Node.js backend
+### NPM Packages (Frontend)
+- **Core**: `expo`, `react-native`, `react`.
+- **Navigation**: `expo-router`, `@react-navigation/native`, `@react-navigation/bottom-tabs`.
+- **Storage**: `@react-native-async-storage/async-storage`.
+- **UI**: `lucide-react-native`, `react-native-render-html`, `react-native-webview`, `react-native-svg`.
+- **Expo Modules**: `expo-linear-gradient`, `expo-blur`, `expo-camera`, `expo-web-browser`, `expo-font`, `expo-linking`.
 
-**Google Calendar** (Future Integration)
-- Public iCal feed integration for church events planned
-- Calendar ID stored in church configuration
-- No direct Google API authentication required (public calendars only)
-
-### NPM Packages
-
-**Core Framework**:
-- `expo` (^54.0.10): Development platform and build tools
-- `react-native` (0.81.4): Mobile framework
-- `react` (19.1.0): UI library
-
-**Navigation & Routing**:
-- `expo-router` (~6.0.8): File-based routing system
-- `@react-navigation/native` (^7.0.14): Navigation primitives
-- `@react-navigation/bottom-tabs` (^7.2.0): Tab navigation
-
-**Authentication & Data**:
-- `@react-native-async-storage/async-storage`: Local storage for JWT tokens
-- Custom API client (`project/lib/api.ts`) for backend communication
-
-**UI Components & Display**:
-- `lucide-react-native` (^0.544.0): Icon library
-- `react-native-render-html` (^6.3.4): HTML content rendering
-- `react-native-webview` (13.15.0): WebView component
-- `react-native-svg` (15.12.1): SVG rendering
-
-**Expo Modules**:
-- `expo-linear-gradient`: Gradient backgrounds
-- `expo-blur`: Blur effects
-- `expo-camera`: Camera access (future feature)
-- `expo-web-browser`: In-app browser
-- `expo-font`: Custom font loading
-- `expo-linking`: Deep linking support
+### NPM Packages (Backend)
+- **Server**: `express`, `cors`, `dotenv`.
+- **Database**: `pg`.
+- **Authentication**: `jsonwebtoken`, `bcrypt`.
 
 ### External APIs
-
-**Church-Specific Endpoints** (configured per church):
-- Standard Payments URL: External donation processing link (configured in database)
-
-**Third-Party Services**:
-- No payment processing integration (external link only)
-- No push notification service (planned feature)
-- No analytics or crash reporting configured
-- No CDN for asset hosting (Expo asset system)
-
-## Backend NPM Packages
-
-**Server Framework**:
-- `express` (^4.18.2): Web server framework
-- `cors` (^2.8.5): Cross-origin resource sharing
-- `dotenv` (^16.3.1): Environment variable management
-
-**Database**:
-- `pg` (^8.11.3): PostgreSQL client for Node.js
-
-**Authentication**:
-- `jsonwebtoken` (^9.0.2): JWT token generation and verification
-- `bcrypt` (^5.1.1): Password hashing
-
-## Deployment Configuration
-
-**Startup Script** (`start.sh`):
-- Starts backend API server on port 3000
-- Starts Expo frontend on port 5000 (web)
-- Both services run concurrently
-
-**Environment Variables Required**:
-- `DATABASE_URL`: PostgreSQL connection string
-- `PGHOST`, `PGUSER`, `PGPASSWORD`, `PGPORT`, `PGDATABASE`: Database credentials
-- `JWT_SECRET`: Secret key for JWT token signing (auto-generated if not set)
-
-## Recent Changes (October 2025)
-
-**Migration from Supabase to Replit Backend**:
-- Migrated from Supabase BaaS to custom Node.js/Express backend
-- Replaced Supabase Auth with JWT-based authentication
-- Migrated PostgreSQL database from Supabase to Replit
-- Updated all React Native screens to use new API client
-- Removed `@supabase/supabase-js` dependency
-- Added custom API client (`project/lib/api.ts`)
-- Backend API runs on unified server (port 5000)
-- Both services managed by single workflow via `start.sh`
-
-**Family Screen Enhancement (October 2025)**:
-- Members API endpoint now includes household information via JOIN query
-- Family screen displays Donor # and Prayer Group from household data
-- Enhanced member data with donor_id and prayer_group fields
-
-**Admin Web Panel (October 2025)**:
-- Added separate web-based admin panel accessible at `/admin/login.html`
-- Admin panel features:
-  - Church configuration management (name, colors, logo, calendar ID, timezone, API endpoints)
-  - **Timezone Configuration** - Dropdown selector with common timezones (Eastern, Central, Pacific, etc.) stored in database
-  - **Announcements management** - Two announcement slots with start/end dates (database-driven)
-  - Excel file upload for members, households, and donations data (bulk import)
-  - **IconCMO format auto-detection** for households, members, and donations uploads
-  - **Full table replacement** - Each upload clears existing data before importing (ensures clean data state)
-  - **Upload progress bars** - Real-time progress tracking during file uploads with percentage display
-  - **Admin Management** - View all administrators, grant admin access to users, revoke admin access (with protection against removing the last admin)
-  - Downloadable CSV templates for members, households, and donations data
-  - Live configuration preview
-  - Role-based access control (admins only)
-- Security features:
-  - JWT tokens include is_admin flag for role verification
-  - Admin middleware validates both token claim and database role
-  - URL validation prevents XSS attacks
-  - Excel upload validation (file type, size limits, required columns)
-  - Flexible MIME type detection for .xls and .xlsx files
-- Admin user: john.doe@example.com (is_admin=true)
-- Static files served from `admin/` directory
-- Templates served from `templates/` directory
-- API endpoints: 
-  - PUT /api/admin/config
-  - POST /api/admin/upload/members
-  - POST /api/admin/upload/households (IconCMO format supported)
-  - POST /api/admin/upload/donations (IconCMO format supported)
-  - GET /api/announcements/admin/all
-  - POST /api/announcements/admin/save
-
-**Households Upload Enhancement (October 2025)**:
-- Added `household_id` column to households table (TEXT, UNIQUE)
-- IconCMO Excel format auto-detection:
-  - Detects metadata rows at top of file
-  - Header row mapping: Picture, ID, Mail To, Phone, Address Line 1, City, State, Zip, Donor #, Prayer Group
-  - Automatically combines address components into full address
-  - Skips empty rows during processing
-- Field mapping:
-  - ID → household_id (external system identifier)
-  - Mail To → family_name
-  - Phone → phone
-  - Address components → combined address field
-  - Donor # → donor_id
-  - Prayer Group → prayer_group (optional)
-- Supports both IconCMO format and standard CSV template format
-- Returns format type in API response for transparency
-
-**Individuals/Members Upload Enhancement (October 2025)**:
-- IconCMO Excel format auto-detection for members/individuals uploads
-- Header row mapping: Family ID, ID, Last Name, First Name, Preferred, Relationship, Mobile Phone, Personal Email, Birth Month, Birth Day Number, Marriage
-- Field mapping:
-  - Family ID → Links to households.household_id for automatic household association
-  - ID → member_id (external system identifier)
-  - Last Name, First Name → last_name, first_name
-  - Relationship → relationship (Husband, Wife, Son, Daughter, etc.)
-  - Mobile Phone → phone
-  - Personal Email → email
-  - Birth Month + Birth Day Number → birth_date (combined into YYYY-MM-DD format, year defaults to 2000)
-  - Marriage (Excel serial date) → wed_date (converted from Excel date format)
-- Auto-links members to households via Family ID lookup
-- Supports both IconCMO format and standard CSV template format
-- Returns format type, inserted, updated, and error counts in API response
-
-**Donations Linking (October 2025)**:
-- Added `household_id` column to users table to link users to their households
-- Updated donations API endpoint to fetch donations by household_id instead of user_id
-- Users see all donations for their household (family-based donation tracking)
-- Donations imported via IconCMO Excel upload are automatically linked to households via household_id
-- All API responses use camelCase formatting for consistency
-- Fixed TypeScript interfaces across all database models (Member, Household, Donation)
-
-**Upload Behavior (October 2025)**:
-- All uploads (households, members, donations) **replace existing data** rather than merging
-- Uploading households clears both households and members tables (CASCADE)
-- Uploading members clears members table only
-- Uploading donations clears donations table only
-- Recommended upload order: 1) Households first, 2) Members second, 3) Donations third
-- This ensures clean data state and prevents orphaned records or duplicates
-
-**Database Status (October 2025)**:
-- 186 households imported from IconCMO system
-- 658 individual members imported and linked to households
-- 2,028 donations imported and linked to households
-- All members successfully linked to their households via Family ID
-- Full IconCMO data integration complete (Households, Individuals, Donations)
-- Admin users: john.doe@example.com, biju.abraham@gmail.com
+- **Church-Specific Endpoints**: Configurable external donation processing URLs.

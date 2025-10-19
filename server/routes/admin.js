@@ -555,29 +555,30 @@ router.post('/upload/prayer-groups', upload.single('file'), async (req, res) => 
     let headerRowIndex = -1;
     for (let i = 0; i < Math.min(10, rawData.length); i++) {
       const row = rawData[i];
-      if (row && (
-        (row.includes('Household Record ID') || row.includes('HouseholdRecordID')) ||
-        (row.includes('Member Record ID') || row.includes('MemberRecordID')) ||
-        row.includes('grpName')
-      )) {
-        headerRowIndex = i;
-        break;
+      if (row && row.length > 0) {
+        const rowStr = row.map(cell => String(cell || '').toLowerCase()).join('|');
+        if (rowStr.includes('household') && (rowStr.includes('grp') || rowStr.includes('group') || rowStr.includes('prayer'))) {
+          headerRowIndex = i;
+          break;
+        }
       }
     }
 
     if (headerRowIndex === -1) {
       return res.status(400).json({ 
-        error: 'Could not find headers. Expected columns: Household Record ID, Member Record ID, grpName' 
+        error: 'Could not find headers. Expected columns containing: household ID and prayer group name' 
       });
     }
 
     const headers = rawData[headerRowIndex];
-    const householdIdIndex = headers.findIndex(h => 
-      h && (String(h).includes('Household') || String(h).toLowerCase().includes('household'))
-    );
-    const grpNameIndex = headers.findIndex(h => 
-      h && (String(h).includes('grpName') || String(h).toLowerCase().includes('grpname') || String(h).toLowerCase().includes('group'))
-    );
+    const householdIdIndex = headers.findIndex(h => {
+      const normalized = String(h || '').toLowerCase().replace(/[_\s]/g, '');
+      return normalized.includes('household') && (normalized.includes('id') || normalized.includes('record'));
+    });
+    const grpNameIndex = headers.findIndex(h => {
+      const normalized = String(h || '').toLowerCase().replace(/[_\s]/g, '');
+      return normalized.includes('grp') || normalized.includes('group') || normalized.includes('prayer');
+    });
 
     if (householdIdIndex === -1 || grpNameIndex === -1) {
       return res.status(400).json({ 
