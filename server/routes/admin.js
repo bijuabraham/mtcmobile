@@ -537,6 +537,114 @@ router.post('/upload/donations', upload.single('file'), async (req, res) => {
   }
 });
 
+router.post('/upload/prayer-groups', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const rawData = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+
+    if (rawData.length === 0) {
+      return res.status(400).json({ error: 'Excel file is empty' });
+    }
+
+    let headerRowIndex = -1;
+    for (let i = 0; i < Math.min(10, rawData.length); i++) {
+      const row = rawData[i];
+      if (row && (
+        (row.includes('Household Record ID') || row.includes('HouseholdRecordID')) ||
+        (row.includes('Member Record ID') || row.includes('MemberRecordID')) ||
+        row.includes('grpName')
+      )) {
+        headerRowIndex = i;
+        break;
+      }
+    }
+
+    if (headerRowIndex === -1) {
+      return res.status(400).json({ 
+        error: 'Could not find headers. Expected columns: Household Record ID, Member Record ID, grpName' 
+      });
+    }
+
+    const headers = rawData[headerRowIndex];
+    const householdIdIndex = headers.findIndex(h => 
+      h && (String(h).includes('Household') || String(h).toLowerCase().includes('household'))
+    );
+    const grpNameIndex = headers.findIndex(h => 
+      h && (String(h).includes('grpName') || String(h).toLowerCase().includes('grpname') || String(h).toLowerCase().includes('group'))
+    );
+
+    if (householdIdIndex === -1 || grpNameIndex === -1) {
+      return res.status(400).json({ 
+        error: 'Missing required columns: Household Record ID and grpName' 
+      });
+    }
+
+    const data = [];
+    for (let i = headerRowIndex + 1; i < rawData.length; i++) {
+      const row = rawData[i];
+      if (!row || row.every(cell => !cell)) continue;
+
+      const householdId = row[householdIdIndex] ? String(row[householdIdIndex]).trim() : null;
+      const grpName = row[grpNameIndex] ? String(row[grpNameIndex]).trim() : null;
+
+      if (householdId && grpName) {
+        data.push({ householdId, grpName });
+      }
+    }
+
+    if (data.length === 0) {
+      return res.status(400).json({ error: 'No valid data rows found with both Household ID and Prayer Group name' });
+    }
+
+    if (data.length > 10000) {
+      return res.status(400).json({ error: 'Too many rows. Maximum 10,000 rows allowed' });
+    }
+
+    let updated = 0;
+    let notFound = 0;
+    let errors = 0;
+
+    for (const { householdId, grpName } of data) {
+      try {
+        const result = await db.query(
+          `UPDATE households 
+           SET prayer_group = $1, updated_at = NOW() 
+           WHERE household_id = $2
+           RETURNING id`,
+          [grpName, householdId]
+        );
+
+        if (result.rows.length > 0) {
+          updated++;
+        } else {
+          notFound++;
+        }
+      } catch (err) {
+        console.error(`Error updating household ${householdId}:`, err);
+        errors++;
+      }
+    }
+
+    res.json({
+      success: true,
+      updated,
+      notFound,
+      errors,
+      total: data.length,
+      message: `Updated ${updated} households with prayer group assignments`
+    });
+  } catch (error) {
+    console.error('Upload prayer groups error:', error);
+    res.status(500).json({ error: error.message || 'Failed to upload prayer groups data' });
+  }
+});
+
 router.get('/users', async (req, res) => {
   try {
     const result = await db.query(
