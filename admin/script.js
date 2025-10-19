@@ -118,6 +118,132 @@ document.getElementById('configForm').addEventListener('submit', async (e) => {
   }
 });
 
+// Load Contact Us configuration
+async function loadContactConfig() {
+  try {
+    const response = await fetch(`${API_BASE}/config`);
+    if (!response.ok) throw new Error('Failed to load configuration');
+    
+    const config = await response.json();
+    
+    // Load vicar info
+    document.getElementById('vicarName').value = config.vicarName || '';
+    document.getElementById('vicarPhotoUrl').value = config.vicarPhotoUrl || '';
+    document.getElementById('vicarPhone').value = config.vicarPhone || '';
+    document.getElementById('vicarEmail').value = config.vicarEmail || '';
+    
+    // Load church address
+    document.getElementById('churchAddress').value = config.churchAddress || '';
+    
+    // Load executive board
+    if (config.executiveBoard && Array.isArray(config.executiveBoard)) {
+      config.executiveBoard.forEach(member => {
+        const inputs = document.querySelectorAll(`[data-position="${member.position}"]`);
+        inputs.forEach(input => {
+          const field = input.dataset.field;
+          if (field && member[field]) {
+            input.value = member[field];
+          }
+        });
+      });
+    }
+    
+    showNotification('Contact configuration loaded successfully');
+  } catch (error) {
+    console.error('Error loading contact config:', error);
+    showNotification('Failed to load contact configuration', 'error');
+  }
+}
+
+// Save Contact Us configuration
+document.getElementById('contactForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  // Collect executive board data
+  const positions = [
+    'Vice President',
+    'Secretary',
+    'Treasurer - Cash',
+    'Treasurer - Accounts',
+    'Lay Leader (Malayalam)',
+    'Lay Leader (English)',
+    'Mandalam Member',
+    'Assembly Members'
+  ];
+  
+  const executiveBoard = positions.map(position => {
+    const nameInput = document.querySelector(`[data-position="${position}"][data-field="name"]`);
+    const phoneInput = document.querySelector(`[data-position="${position}"][data-field="phone"]`);
+    const emailInput = document.querySelector(`[data-position="${position}"][data-field="email"]`);
+    
+    const member = {
+      position: position,
+      name: nameInput ? nameInput.value.trim() : ''
+    };
+    
+    if (phoneInput && phoneInput.value.trim()) {
+      member.phone = phoneInput.value.trim();
+    }
+    
+    if (emailInput && emailInput.value.trim()) {
+      member.email = emailInput.value.trim();
+    }
+    
+    return member;
+  }).filter(member => member.name);  // Only include members with names
+  
+  const formData = {
+    vicarName: document.getElementById('vicarName').value.trim(),
+    vicarPhotoUrl: document.getElementById('vicarPhotoUrl').value.trim(),
+    vicarPhone: document.getElementById('vicarPhone').value.trim(),
+    vicarEmail: document.getElementById('vicarEmail').value.trim(),
+    churchAddress: document.getElementById('churchAddress').value.trim(),
+    executiveBoard: executiveBoard
+  };
+  
+  try {
+    // First load current config
+    const currentResponse = await fetch(`${API_BASE}/config`);
+    if (!currentResponse.ok) throw new Error('Failed to load current configuration');
+    const currentConfig = await currentResponse.json();
+    
+    // Merge with contact data
+    const mergedData = {
+      churchName: currentConfig.churchName,
+      primaryColor: currentConfig.primaryColor,
+      secondaryColor: currentConfig.secondaryColor,
+      accentColor: currentConfig.accentColor,
+      logoUrl: currentConfig.logoUrl,
+      calendarId: currentConfig.calendarId,
+      timezone: currentConfig.timezone,
+      apiEndpoints: currentConfig.apiEndpoints,
+      ...formData
+    };
+    
+    const response = await fetch(`${API_BASE}/admin/config`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+      },
+      body: JSON.stringify(mergedData)
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to save contact configuration');
+    }
+    
+    showNotification('Contact configuration saved successfully!');
+  } catch (error) {
+    console.error('Error saving contact config:', error);
+    showNotification(error.message, 'error');
+  }
+});
+
+// Load Contact button
+document.getElementById('loadContactBtn').addEventListener('click', loadContactConfig);
+
 // Helper function to upload with progress tracking
 function uploadWithProgress(url, file, progressContainerId, progressFillId, progressTextId, uploadBtnId) {
   return new Promise((resolve, reject) => {

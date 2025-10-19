@@ -15,6 +15,7 @@
 
     <div class="tabs">
       <button class="tab-btn active" data-tab="config">Configuration</button>
+      <button class="tab-btn" data-tab="contact">Contact Us</button>
       <button class="tab-btn" data-tab="announcements">Announcements</button>
       <button class="tab-btn" data-tab="members">Members Upload</button>
       <button class="tab-btn" data-tab="households">Households Upload</button>
@@ -107,6 +108,206 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Contact Us Tab -->
+    <div id="contact-tab" class="tab-content">
+      <h2>Contact Us Configuration</h2>
+      <p style="color: #666; margin-bottom: 20px;">Configure church contact information displayed in the mobile app.</p>
+      
+      <form id="contactForm">
+        <h3>Vicar Information</h3>
+        <div class="form-group">
+          <label for="vicarName">Vicar Name</label>
+          <input type="text" id="vicarName" name="vicarName" placeholder="Rev. John Doe">
+        </div>
+
+        <div class="form-group">
+          <label for="vicarPhotoUrl">Vicar Photo URL</label>
+          <input type="url" id="vicarPhotoUrl" name="vicarPhotoUrl" placeholder="https://example.com/vicar-photo.jpg">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="vicarPhone">Vicar Phone</label>
+            <input type="tel" id="vicarPhone" name="vicarPhone" placeholder="+1 (555) 123-4567">
+          </div>
+
+          <div class="form-group">
+            <label for="vicarEmail">Vicar Email</label>
+            <input type="email" id="vicarEmail" name="vicarEmail" placeholder="vicar@church.org">
+          </div>
+        </div>
+
+        <h3>Church Address</h3>
+        <div class="form-group">
+          <label for="churchAddress">Full Church Address</label>
+          <textarea id="churchAddress" name="churchAddress" rows="2" 
+                    placeholder="123 Church Street, City, State 12345"></textarea>
+        </div>
+
+        <h3>Executive Board</h3>
+        <p style="color: #666; margin-bottom: 15px;">Configure contact information for executive board members.</p>
+        
+        <div id="executiveBoardContainer">
+          <!-- Vice President -->
+          <div class="board-member-section">
+            <h4>Vice President</h4>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" data-position="Vice President" data-field="name" class="board-input" placeholder="Name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" data-position="Vice President" data-field="phone" class="board-input" placeholder="Phone (optional)">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" data-position="Vice President" data-field="email" class="board-input" placeholder="Email (optional)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Secretary -->
+          <div class="board-member-section">
+            <h4>Secretary</h4>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" data-position="Secretary" data-field="name" class="board-input" placeholder="Name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" data-position="Secretary" data-field="phone" class="board-input" placeholder="Phone (optional)">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" data-position="Secretary" data-field="email" class="board-input" placeholder="Email (optional)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Treasurer - Cash -->
+          <div class="board-member-section">
+            <h4>Treasurer - Cash</h4>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" data-position="Treasurer - Cash" data-field="name" class="board-input" placeholder="Name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" data-position="Treasurer - Cash" data-field="phone" class="board-input" placeholder="Phone (optional)">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" data-position="Treasurer - Cash" data-field="email" class="board-input" placeholder="Email (optional)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Treasurer - Accounts -->
+          <div class="board-member-section">
+            <h4>Treasurer - Accounts</h4>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" data-position="Treasurer - Accounts" data-field="name" class="board-input" placeholder="Name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" data-position="Treasurer - Accounts" data-field="phone" class="board-input" placeholder="Phone (optional)">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" data-position="Treasurer - Accounts" data-field="email" class="board-input" placeholder="Email (optional)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Lay Leader (Malayalam) -->
+          <div class="board-member-section">
+            <h4>Lay Leader (Malayalam)</h4>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" data-position="Lay Leader (Malayalam)" data-field="name" class="board-input" placeholder="Name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" data-position="Lay Leader (Malayalam)" data-field="phone" class="board-input" placeholder="Phone (optional)">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" data-position="Lay Leader (Malayalam)" data-field="email" class="board-input" placeholder="Email (optional)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Lay Leader (English) -->
+          <div class="board-member-section">
+            <h4>Lay Leader (English)</h4>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" data-position="Lay Leader (English)" data-field="name" class="board-input" placeholder="Name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" data-position="Lay Leader (English)" data-field="phone" class="board-input" placeholder="Phone (optional)">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" data-position="Lay Leader (English)" data-field="email" class="board-input" placeholder="Email (optional)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Mandalam Member -->
+          <div class="board-member-section">
+            <h4>Mandalam Member</h4>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" data-position="Mandalam Member" data-field="name" class="board-input" placeholder="Name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" data-position="Mandalam Member" data-field="phone" class="board-input" placeholder="Phone (optional)">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" data-position="Mandalam Member" data-field="email" class="board-input" placeholder="Email (optional)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Assembly Members -->
+          <div class="board-member-section">
+            <h4>Assembly Members</h4>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" data-position="Assembly Members" data-field="name" class="board-input" placeholder="Name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" data-position="Assembly Members" data-field="phone" class="board-input" placeholder="Phone (optional)">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" data-position="Assembly Members" data-field="email" class="board-input" placeholder="Email (optional)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button type="submit" class="btn-primary">Save Contact Configuration</button>
+          <button type="button" id="loadContactBtn" class="btn-secondary">Load Current Configuration</button>
+        </div>
+      </form>
     </div>
 
     <!-- Announcements Tab -->
