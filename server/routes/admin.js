@@ -51,7 +51,10 @@ function isValidUrl(url) {
 
 router.put('/config', async (req, res) => {
   try {
-    const { churchName, primaryColor, secondaryColor, accentColor, logoUrl, calendarId, timezone, apiEndpoints } = req.body;
+    const { 
+      churchName, primaryColor, secondaryColor, accentColor, logoUrl, calendarId, timezone, apiEndpoints,
+      vicarName, vicarPhotoUrl, vicarPhone, vicarEmail, churchAddress, executiveBoard
+    } = req.body;
 
     if (!churchName || typeof churchName !== 'string' || churchName.trim().length === 0) {
       return res.status(400).json({ error: 'Church name is required and must be a non-empty string' });
@@ -71,6 +74,10 @@ router.put('/config', async (req, res) => {
 
     if (logoUrl && !isValidUrl(logoUrl)) {
       return res.status(400).json({ error: 'Logo URL must be a valid HTTPS/HTTP URL' });
+    }
+
+    if (vicarPhotoUrl && !isValidUrl(vicarPhotoUrl)) {
+      return res.status(400).json({ error: 'Vicar photo URL must be a valid HTTPS/HTTP URL' });
     }
 
     if (timezone && typeof timezone !== 'string') {
@@ -99,19 +106,36 @@ router.put('/config', async (req, res) => {
            calendar_id = $6, 
            timezone = $7,
            api_endpoints = $8,
+           vicar_name = $9,
+           vicar_photo_url = $10,
+           vicar_phone = $11,
+           vicar_email = $12,
+           church_address = $13,
+           executive_board = $14,
            updated_at = NOW()
        WHERE id = (SELECT id FROM church_configurations LIMIT 1)
        RETURNING *`,
-      [churchName, primaryColor, secondaryColor, accentColor, logoUrl, calendarId, timezone || 'America/New_York', JSON.stringify(apiEndpoints)]
+      [
+        churchName, primaryColor, secondaryColor, accentColor, logoUrl, calendarId, 
+        timezone || 'America/New_York', JSON.stringify(apiEndpoints),
+        vicarName, vicarPhotoUrl, vicarPhone, vicarEmail, churchAddress, 
+        JSON.stringify(executiveBoard || [])
+      ]
     );
 
     if (result.rows.length === 0) {
       const insertResult = await db.query(
         `INSERT INTO church_configurations 
-         (church_name, primary_color, secondary_color, accent_color, logo_url, calendar_id, timezone, api_endpoints)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         (church_name, primary_color, secondary_color, accent_color, logo_url, calendar_id, timezone, api_endpoints,
+          vicar_name, vicar_photo_url, vicar_phone, vicar_email, church_address, executive_board)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
          RETURNING *`,
-        [churchName, primaryColor, secondaryColor, accentColor, logoUrl, calendarId, timezone || 'America/New_York', JSON.stringify(apiEndpoints)]
+        [
+          churchName, primaryColor, secondaryColor, accentColor, logoUrl, calendarId, 
+          timezone || 'America/New_York', JSON.stringify(apiEndpoints),
+          vicarName, vicarPhotoUrl, vicarPhone, vicarEmail, churchAddress,
+          JSON.stringify(executiveBoard || [])
+        ]
       );
       return res.json(keysToCamelCase(insertResult.rows[0]));
     }

@@ -1,3 +1,10 @@
+export interface ExecutiveBoardMember {
+  position: string;
+  name: string;
+  phone?: string;
+  email?: string;
+}
+
 export interface ChurchConfiguration {
   id: string;
   churchName: string;
@@ -12,6 +19,12 @@ export interface ChurchConfiguration {
   };
   calendarId: string;
   timezone: string;
+  vicarName?: string;
+  vicarPhotoUrl?: string;
+  vicarPhone?: string;
+  vicarEmail?: string;
+  churchAddress?: string;
+  executiveBoard?: ExecutiveBoardMember[];
   createdAt: string;
   updatedAt: string;
 }
