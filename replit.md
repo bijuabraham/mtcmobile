@@ -214,6 +214,7 @@ Preferred communication style: Simple, everyday language.
   - **IconCMO format auto-detection** for households, members, and donations uploads
   - **Full table replacement** - Each upload clears existing data before importing (ensures clean data state)
   - **Upload progress bars** - Real-time progress tracking during file uploads with percentage display
+  - **Admin Management** - View all administrators, grant admin access to users, revoke admin access (with protection against removing the last admin)
   - Downloadable CSV templates for members, households, and donations data
   - Live configuration preview
   - Role-based access control (admins only)
