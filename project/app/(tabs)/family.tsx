@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Alert, Image } from 'react-native';
+import { Mail, Phone, Home } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChurchConfig } from '@/contexts/ChurchConfigContext';
 import { api } from '@/lib/api';
-import { Member } from '@/types/database';
+import { Member, Household } from '@/types/database';
 
 export default function FamilyScreen() {
   const [member, setMember] = useState<Member | null>(null);
+  const [household, setHousehold] = useState<Household | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { config } = useChurchConfig();
@@ -26,11 +28,26 @@ export default function FamilyScreen() {
       const userMember = data.find((m: Member) => m.email === user.email);
       if (userMember) {
         setMember(userMember);
+        if (userMember.householdId) {
+          await fetchHousehold(userMember.householdId);
+        }
       }
     } catch (err) {
       Alert.alert('Error', 'Failed to load member information');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchHousehold = async (householdId: string) => {
+    try {
+      const households = await api.getAllHouseholds();
+      const userHousehold = households.find((h: Household) => h.id === householdId);
+      if (userHousehold) {
+        setHousehold(userHousehold);
+      }
+    } catch (err) {
+      console.error('Failed to load household information:', err);
     }
   };
 
@@ -82,6 +99,15 @@ export default function FamilyScreen() {
     );
   }
 
+  const householdInitials = household?.familyName 
+    ? household.familyName
+        .split(' ')
+        .map(word => word.charAt(0))
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    : '';
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={[styles.header, { backgroundColor: primaryColor }]}>
@@ -95,6 +121,41 @@ export default function FamilyScreen() {
         <Text style={styles.churchName}>{config?.churchName || 'Church Management'}</Text>
         <Text style={styles.headerTitle}>My Family</Text>
       </View>
+
+      {household && (
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Household Information</Text>
+          </View>
+
+          <View style={styles.householdInfo}>
+            <View style={[styles.avatar, { backgroundColor: primaryColor }]}>
+              <Text style={styles.avatarText}>{householdInitials}</Text>
+            </View>
+            <View style={styles.householdDetails}>
+              <Text style={styles.householdName}>{household.familyName}</Text>
+              {household.email && (
+                <View style={styles.contactItem}>
+                  <Mail size={14} color="#666" />
+                  <Text style={styles.contactText}>{household.email}</Text>
+                </View>
+              )}
+              {household.phone && (
+                <View style={styles.contactItem}>
+                  <Phone size={14} color="#666" />
+                  <Text style={styles.contactText}>{household.phone}</Text>
+                </View>
+              )}
+              {household.prayerGroup && (
+                <View style={styles.contactItem}>
+                  <Home size={14} color="#666" />
+                  <Text style={styles.contactText}>{household.prayerGroup}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+      )}
 
       <View style={styles.card}>
         <View style={styles.cardHeader}>
@@ -283,5 +344,41 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 16,
     color: '#333',
+  },
+  householdInfo: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  avatarText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  householdDetails: {
+    flex: 1,
+  },
+  householdName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  contactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  contactText: {
+    fontSize: 14,
+    color: '#666',
   },
 });
