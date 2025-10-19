@@ -17,8 +17,9 @@ Preferred communication style: Simple, everyday language.
 - **Database**: Replit PostgreSQL, managed via environment variables.
 - **Server**: Node.js with Express (port 3000), providing RESTful API endpoints for all application data.
 - **Authentication**: Custom JWT-based system with email/password (bcrypt hashing) for secure session management.
-- **Data Models**: Key tables include `users`, `church_configurations` (singleton), `households`, `members`, `donations`, `announcements`, and `contact_us`.
-- **Admin Panel**: A separate web-based admin panel (`/admin/login.html`) allows church configuration, announcement management, bulk data uploads (members, households, donations, prayer groups with IconCMO format auto-detection), and admin user management with role-based access control.
+- **Data Models**: Key tables include `users`, `church_configurations` (singleton with contact info fields), `households`, `members`, `donations`, `announcements`, and `contact_us`.
+- **Admin Panel**: A separate web-based admin panel (`/admin/login.html`) allows church configuration, contact us configuration (vicar info, church address, executive board), announcement management, bulk data uploads (members, households, donations, prayer groups with IconCMO format auto-detection), and admin user management with role-based access control.
+- **Contact Us Configuration**: The church_configurations table includes fields for vicar information (name, photo URL, phone, email), church address, and executive board members (stored as JSONB array with 8 positions: Vice President, Secretary, Treasurer - Cash, Treasurer - Accounts, Lay Leader Malayalam, Lay Leader English, Mandalam Member, Assembly Members). Each board member can have name, phone, and email.
 
 ### White-Label Configuration
 - **Database-Driven Branding**: A single `church_configurations` table stores all branding and configuration settings (e.g., name, colors, logo, API endpoints). This enables a single codebase to serve multiple churches without code changes for new deployments.

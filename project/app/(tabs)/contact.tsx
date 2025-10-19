@@ -1,33 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Linking, ActivityIndicator, Image } from 'react-native';
-import { Phone, Mail } from 'lucide-react-native';
+import { Phone, Mail, MapPin } from 'lucide-react-native';
 import { useChurchConfig } from '@/contexts/ChurchConfigContext';
-import { api } from '@/lib/api';
-import { ContactUs } from '@/types/database';
+
+interface ExecutiveBoardMember {
+  position: string;
+  name: string;
+  phone?: string;
+  email?: string;
+}
 
 export default function ContactScreen() {
-  const [contacts, setContacts] = useState<ContactUs[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { config } = useChurchConfig();
 
   const primaryColor = config?.primaryColor || '#C41E3A';
-
-  useEffect(() => {
-    fetchContacts();
-  }, []);
-
-  const fetchContacts = async () => {
-    try {
-      setLoading(true);
-      const data = await api.getContacts();
-      setContacts(data || []);
-    } catch (err) {
-      console.error('Error fetching contacts:', err);
-      setContacts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handlePhonePress = (phone: string) => {
     Linking.openURL(`tel:${phone}`);
@@ -36,6 +23,40 @@ export default function ContactScreen() {
   const handleEmailPress = (email: string) => {
     Linking.openURL(`mailto:${email}`);
   };
+
+  const openMaps = (address: string) => {
+    const encodedAddress = encodeURIComponent(address);
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+    Linking.openURL(url).catch(err => console.error('Error opening maps:', err));
+  };
+
+  const renderContactRow = (icon: React.ReactNode, text: string, onPress: () => void) => (
+    <TouchableOpacity style={styles.contactRow} onPress={onPress}>
+      {icon}
+      <Text style={[styles.contactText, { color: primaryColor }]}>
+        {text}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const renderBoardMember = (member: ExecutiveBoardMember) => (
+    <View key={member.position} style={styles.boardMemberCard}>
+      <Text style={styles.boardPosition}>{member.position}</Text>
+      <Text style={styles.boardName}>{member.name}</Text>
+      
+      {member.phone && renderContactRow(
+        <Phone size={18} color={primaryColor} />,
+        member.phone,
+        () => handlePhonePress(member.phone!)
+      )}
+      
+      {member.email && renderContactRow(
+        <Mail size={18} color={primaryColor} />,
+        member.email,
+        () => handleEmailPress(member.email!)
+      )}
+    </View>
+  );
 
   if (loading) {
     return (
@@ -57,36 +78,64 @@ export default function ContactScreen() {
         )}
         <Text style={styles.churchName}>{config?.churchName || 'Church Management'}</Text>
         <Text style={styles.headerTitle}>Contact Us</Text>
-        <Text style={styles.headerSubtitle}>Get in touch with our team</Text>
       </View>
 
       <View style={styles.content}>
-        {contacts.map((contact) => (
-          <View key={contact.id} style={styles.contactCard}>
-            <Text style={styles.contactTitle}>{contact.title}</Text>
-            <Text style={styles.contactName}>{contact.name}</Text>
+        {/* Vicar Section */}
+        {config?.vicarName && (
+          <View style={styles.vicarSection}>
+            <Text style={styles.sectionTitle}>Vicar</Text>
+            <View style={styles.vicarCard}>
+              {config.vicarPhotoUrl && (
+                <Image 
+                  source={{ uri: config.vicarPhotoUrl }} 
+                  style={styles.vicarPhoto} 
+                  resizeMode="cover"
+                />
+              )}
+              <View style={styles.vicarInfo}>
+                <Text style={styles.vicarName}>{config.vicarName}</Text>
+                
+                {config.vicarPhone && renderContactRow(
+                  <Phone size={20} color={primaryColor} />,
+                  config.vicarPhone,
+                  () => handlePhonePress(config.vicarPhone!)
+                )}
+                
+                {config.vicarEmail && renderContactRow(
+                  <Mail size={20} color={primaryColor} />,
+                  config.vicarEmail,
+                  () => handleEmailPress(config.vicarEmail!)
+                )}
+              </View>
+            </View>
+          </View>
+        )}
 
-            <TouchableOpacity
-              style={styles.contactRow}
-              onPress={() => handlePhonePress(contact.phone)}
+        {/* Church Address Section */}
+        {config?.churchAddress && (
+          <View style={styles.addressSection}>
+            <Text style={styles.sectionTitle}>Church Address</Text>
+            <TouchableOpacity 
+              style={styles.addressCard}
+              onPress={() => openMaps(config.churchAddress!)}
+              activeOpacity={0.7}
             >
-              <Phone size={20} color={primaryColor} />
-              <Text style={[styles.contactText, { color: primaryColor }]}>
-                {contact.phone}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.contactRow}
-              onPress={() => handleEmailPress(contact.email)}
-            >
-              <Mail size={20} color={primaryColor} />
-              <Text style={[styles.contactText, { color: primaryColor }]}>
-                {contact.email}
+              <MapPin size={24} color={primaryColor} />
+              <Text style={[styles.addressText, { color: primaryColor }]}>
+                {config.churchAddress}
               </Text>
             </TouchableOpacity>
           </View>
-        ))}
+        )}
+
+        {/* Executive Board Section */}
+        {config?.executiveBoard && config.executiveBoard.length > 0 && (
+          <View style={styles.boardSection}>
+            <Text style={styles.sectionTitle}>Executive Board</Text>
+            {config.executiveBoard.map(renderBoardMember)}
+          </View>
+        )}
       </View>
     </ScrollView>
   );
@@ -140,28 +189,93 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    opacity: 0.9,
   },
   content: {
     padding: 16,
   },
-  contactCard: {
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
+  },
+  vicarSection: {
+    marginBottom: 24,
+  },
+  vicarCard: {
     backgroundColor: '#FFFFFF',
-    padding: 20,
     borderRadius: 12,
-    marginBottom: 16,
+    padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  contactTitle: {
+  vicarPhoto: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  vicarInfo: {
+    alignItems: 'center',
+  },
+  vicarName: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingVertical: 4,
+  },
+  contactText: {
+    fontSize: 16,
+    marginLeft: 12,
+    textDecorationLine: 'underline',
+  },
+  addressSection: {
+    marginBottom: 24,
+  },
+  addressCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  addressText: {
+    fontSize: 16,
+    marginLeft: 12,
+    flex: 1,
+    textDecorationLine: 'underline',
+  },
+  boardSection: {
+    marginBottom: 24,
+  },
+  boardMemberCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  boardPosition: {
     fontSize: 14,
     fontWeight: '600',
     color: '#999',
@@ -169,20 +283,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: 4,
   },
-  contactName: {
-    fontSize: 20,
+  boardName: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 16,
-  },
-  contactRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: 12,
-  },
-  contactText: {
-    fontSize: 16,
-    marginLeft: 12,
-    textDecorationLine: 'underline',
   },
 });
