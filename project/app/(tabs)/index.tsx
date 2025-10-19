@@ -6,7 +6,7 @@ import { useChurchConfig } from '@/contexts/ChurchConfigContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import RenderHTML from 'react-native-render-html';
-import { Announcement } from '@/types/database';
+import { Announcement, Member } from '@/types/database';
 
 interface MenuItem {
   id: string;
@@ -20,6 +20,7 @@ export default function HomeScreen() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loadingAnnouncement, setLoadingAnnouncement] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [member, setMember] = useState<Member | null>(null);
   const { config, refreshConfig } = useChurchConfig();
   const { user } = useAuth();
   const router = useRouter();
@@ -30,7 +31,8 @@ export default function HomeScreen() {
 
   useEffect(() => {
     fetchAnnouncements();
-  }, []);
+    fetchMember();
+  }, [user]);
 
   const fetchAnnouncements = async () => {
     try {
@@ -45,11 +47,26 @@ export default function HomeScreen() {
     }
   };
 
+  const fetchMember = async () => {
+    if (!user?.email) return;
+    
+    try {
+      const allMembers = await api.getMembers();
+      const userMember = allMembers.find((m: Member) => m.email === user.email);
+      if (userMember) {
+        setMember(userMember);
+      }
+    } catch (err) {
+      console.error('Error fetching member:', err);
+    }
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
     await Promise.all([
       refreshConfig(),
-      fetchAnnouncements()
+      fetchAnnouncements(),
+      fetchMember()
     ]);
     setRefreshing(false);
   };
@@ -126,7 +143,9 @@ export default function HomeScreen() {
           </View>
         )}
         <Text style={styles.churchName}>{config?.churchName || 'Church Management'}</Text>
-        <Text style={styles.welcomeText}>Welcome, {user?.email?.split('@')[0]}</Text>
+        <Text style={styles.welcomeText}>
+          Welcome, {member ? `${member.firstName} ${member.lastName}` : user?.email?.split('@')[0]}
+        </Text>
       </View>
 
       {!loadingAnnouncement && announcements.length > 0 && (
