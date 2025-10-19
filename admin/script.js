@@ -41,7 +41,6 @@ async function loadConfig() {
     
     if (config.apiEndpoints) {
       document.getElementById('iconcmo').value = config.apiEndpoints.iconcmo || '';
-      document.getElementById('announcements').value = config.apiEndpoints.announcements || '';
       document.getElementById('standardPayments').value = config.apiEndpoints.standardPayments || '';
     }
     
@@ -91,7 +90,6 @@ document.getElementById('configForm').addEventListener('submit', async (e) => {
     calendarId: document.getElementById('calendarId').value,
     apiEndpoints: {
       iconcmo: document.getElementById('iconcmo').value,
-      announcements: document.getElementById('announcements').value,
       standardPayments: document.getElementById('standardPayments').value
     }
   };
@@ -227,6 +225,114 @@ document.getElementById('householdsUploadForm').addEventListener('submit', async
 // Load config button
 document.getElementById('loadConfigBtn').addEventListener('click', loadConfig);
 
+// Announcements Management
+async function loadAnnouncements() {
+  try {
+    const token = localStorage.getItem('adminToken');
+    const response = await fetch(`${API_BASE}/announcements/admin/all`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) throw new Error('Failed to load announcements');
+    
+    const announcements = await response.json();
+    
+    // Fill in announcement 1
+    if (announcements[0]) {
+      document.getElementById('announcement1Id').value = announcements[0].id || '';
+      document.getElementById('announcement1Content').value = announcements[0].content || '';
+      document.getElementById('announcement1StartDate').value = formatDateForInput(announcements[0].startDate);
+      document.getElementById('announcement1EndDate').value = formatDateForInput(announcements[0].endDate);
+    }
+    
+    // Fill in announcement 2
+    if (announcements[1]) {
+      document.getElementById('announcement2Id').value = announcements[1].id || '';
+      document.getElementById('announcement2Content').value = announcements[1].content || '';
+      document.getElementById('announcement2StartDate').value = formatDateForInput(announcements[1].startDate);
+      document.getElementById('announcement2EndDate').value = formatDateForInput(announcements[1].endDate);
+    }
+    
+    showNotification('Announcements loaded successfully');
+  } catch (error) {
+    console.error('Error loading announcements:', error);
+    showNotification('Failed to load announcements', 'error');
+  }
+}
+
+function formatDateForInput(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const offset = date.getTimezoneOffset();
+  const localDate = new Date(date.getTime() - offset * 60 * 1000);
+  return localDate.toISOString().slice(0, 16);
+}
+
+// Save announcements
+document.getElementById('announcementsForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  try {
+    const token = localStorage.getItem('adminToken');
+    
+    const announcements = [
+      {
+        id: document.getElementById('announcement1Id').value || null,
+        content: document.getElementById('announcement1Content').value,
+        startDate: document.getElementById('announcement1StartDate').value,
+        endDate: document.getElementById('announcement1EndDate').value
+      },
+      {
+        id: document.getElementById('announcement2Id').value || null,
+        content: document.getElementById('announcement2Content').value,
+        startDate: document.getElementById('announcement2StartDate').value,
+        endDate: document.getElementById('announcement2EndDate').value
+      }
+    ];
+    
+    const response = await fetch(`${API_BASE}/announcements/admin/save`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ announcements })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to save announcements');
+    }
+    
+    const result = await response.json();
+    
+    // Update IDs for newly created announcements
+    if (result.announcements[0]) {
+      document.getElementById('announcement1Id').value = result.announcements[0].id;
+    }
+    if (result.announcements[1]) {
+      document.getElementById('announcement2Id').value = result.announcements[1].id;
+    }
+    
+    const resultBox = document.getElementById('announcementsResult');
+    resultBox.className = 'result-box success';
+    resultBox.textContent = 'Announcements saved successfully!';
+    
+    showNotification('Announcements saved successfully!');
+  } catch (error) {
+    console.error('Error saving announcements:', error);
+    const resultBox = document.getElementById('announcementsResult');
+    resultBox.className = 'result-box error';
+    resultBox.textContent = error.message;
+    showNotification(error.message, 'error');
+  }
+});
+
+// Load announcements button
+document.getElementById('loadAnnouncementsBtn').addEventListener('click', loadAnnouncements);
+
 // Logout
 document.getElementById('logoutBtn').addEventListener('click', () => {
   localStorage.removeItem('adminToken');
@@ -243,4 +349,5 @@ window.addEventListener('load', () => {
   }
   
   loadConfig();
+  loadAnnouncements();
 });

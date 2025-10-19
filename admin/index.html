@@ -15,6 +15,7 @@
 
     <div class="tabs">
       <button class="tab-btn active" data-tab="config">Configuration</button>
+      <button class="tab-btn" data-tab="announcements">Announcements</button>
       <button class="tab-btn" data-tab="members">Members Upload</button>
       <button class="tab-btn" data-tab="households">Households Upload</button>
     </div>
@@ -62,10 +63,6 @@
           <input type="url" id="iconcmo" name="iconcmo" placeholder="https://api.iconcmo.com">
         </div>
 
-        <div class="form-group">
-          <label for="announcements">Announcements URL</label>
-          <input type="url" id="announcements" name="announcements" placeholder="https://yourchurch.org/mobilemessage">
-        </div>
 
         <div class="form-group">
           <label for="standardPayments">Standard Payments URL</label>
@@ -87,6 +84,69 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Announcements Tab -->
+    <div id="announcements-tab" class="tab-content">
+      <h2>Manage Announcements</h2>
+      <p style="color: #666; margin-bottom: 20px;">Manage two active announcements that will display in the mobile app based on their date ranges.</p>
+      
+      <form id="announcementsForm">
+        <!-- Announcement 1 -->
+        <div class="announcement-section">
+          <h3>Announcement 1</h3>
+          <input type="hidden" id="announcement1Id" name="announcement1Id">
+          
+          <div class="form-group">
+            <label for="announcement1Content">Announcement Text</label>
+            <textarea id="announcement1Content" name="announcement1Content" rows="4" 
+                      placeholder="Enter your announcement text here..." required></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="announcement1StartDate">Start Date</label>
+              <input type="datetime-local" id="announcement1StartDate" name="announcement1StartDate" required>
+            </div>
+
+            <div class="form-group">
+              <label for="announcement1EndDate">End Date</label>
+              <input type="datetime-local" id="announcement1EndDate" name="announcement1EndDate" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- Announcement 2 -->
+        <div class="announcement-section">
+          <h3>Announcement 2</h3>
+          <input type="hidden" id="announcement2Id" name="announcement2Id">
+          
+          <div class="form-group">
+            <label for="announcement2Content">Announcement Text</label>
+            <textarea id="announcement2Content" name="announcement2Content" rows="4" 
+                      placeholder="Enter your announcement text here..." required></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="announcement2StartDate">Start Date</label>
+              <input type="datetime-local" id="announcement2StartDate" name="announcement2StartDate" required>
+            </div>
+
+            <div class="form-group">
+              <label for="announcement2EndDate">End Date</label>
+              <input type="datetime-local" id="announcement2EndDate" name="announcement2EndDate" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button type="submit" class="btn-primary">Save Announcements</button>
+          <button type="button" id="loadAnnouncementsBtn" class="btn-secondary">Load Current Announcements</button>
+        </div>
+      </form>
+
+      <div id="announcementsResult" class="result-box"></div>
     </div>
 
     <!-- Members Upload Tab -->
