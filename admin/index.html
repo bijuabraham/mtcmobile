@@ -19,6 +19,7 @@
       <button class="tab-btn" data-tab="members">Members Upload</button>
       <button class="tab-btn" data-tab="households">Households Upload</button>
       <button class="tab-btn" data-tab="donations">Donations Upload</button>
+      <button class="tab-btn" data-tab="prayer-groups">Prayer Groups Upload</button>
       <button class="tab-btn" data-tab="admins">Admin Management</button>
     </div>
 
@@ -297,6 +298,42 @@
         </div>
 
         <div id="donationsResult" class="result-box"></div>
+      </div>
+    </div>
+
+    <!-- Prayer Groups Upload Tab -->
+    <div id="prayer-groups-tab" class="tab-content">
+      <h2>Upload Prayer Groups Data</h2>
+      <div class="upload-section">
+        <div class="info-box">
+          <h3>Excel Format Requirements</h3>
+          <p>Your Excel file should have the following columns:</p>
+          <ul>
+            <li><strong>Household Record ID</strong> - Unique household identifier (must match existing household_id)</li>
+            <li><strong>Member Record ID</strong> - Member identifier (optional, not used in update)</li>
+            <li><strong>grpName</strong> - Prayer group name to assign to the household</li>
+          </ul>
+          <p style="margin-top: 10px; color: #666;">
+            <strong>Note:</strong> This upload will UPDATE existing households with prayer group assignments. It will not replace or delete household data.
+          </p>
+        </div>
+
+        <form id="prayerGroupsUploadForm">
+          <div class="form-group">
+            <label for="prayerGroupsFile">Select Excel File (.xlsx)</label>
+            <input type="file" id="prayerGroupsFile" name="file" accept=".xlsx,.xls,.csv" required>
+          </div>
+          <button type="submit" class="btn-primary" id="prayerGroupsUploadBtn">Upload Prayer Groups</button>
+        </form>
+
+        <div id="prayerGroupsProgress" class="progress-container" style="display:none;">
+          <div class="progress-bar">
+            <div class="progress-fill" id="prayerGroupsProgressFill"></div>
+          </div>
+          <div class="progress-text" id="prayerGroupsProgressText">Uploading... 0%</div>
+        </div>
+
+        <div id="prayerGroupsResult" class="result-box"></div>
       </div>
     </div>
 

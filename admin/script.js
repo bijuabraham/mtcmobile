@@ -438,6 +438,49 @@ document.getElementById('donationsUploadForm').addEventListener('submit', async 
   }
 });
 
+// Upload prayer groups
+document.getElementById('prayerGroupsUploadForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const fileInput = document.getElementById('prayerGroupsFile');
+  const file = fileInput.files[0];
+  
+  if (!file) {
+    showNotification('Please select a file', 'error');
+    return;
+  }
+  
+  try {
+    const result = await uploadWithProgress(
+      `${API_BASE}/admin/upload/prayer-groups`,
+      file,
+      'prayerGroupsProgress',
+      'prayerGroupsProgressFill',
+      'prayerGroupsProgressText',
+      'prayerGroupsUploadBtn'
+    );
+    
+    const resultBox = document.getElementById('prayerGroupsResult');
+    resultBox.className = 'result-box success';
+    resultBox.innerHTML = `
+      <strong>Upload Successful!</strong><br>
+      ${result.updated} households updated with prayer group assignments<br>
+      ${result.notFound > 0 ? result.notFound + ' households not found<br>' : ''}
+      ${result.errors > 0 ? result.errors + ' errors<br>' : ''}
+      Total processed: ${result.total}
+    `;
+    
+    showNotification('Prayer groups uploaded successfully!');
+    fileInput.value = '';
+  } catch (error) {
+    console.error('Error uploading prayer groups:', error);
+    const resultBox = document.getElementById('prayerGroupsResult');
+    resultBox.className = 'result-box error';
+    resultBox.textContent = error.message;
+    showNotification(error.message, 'error');
+  }
+});
+
 // Logout
 document.getElementById('logoutBtn').addEventListener('click', () => {
   localStorage.removeItem('adminToken');
