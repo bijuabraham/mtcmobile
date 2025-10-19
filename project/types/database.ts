@@ -36,6 +36,8 @@ export interface Member {
   relationship: string | null;
   phone: string | null;
   email: string | null;
+  donor_id: string | null;
+  prayer_group: string | null;
   created_at: string;
   updated_at: string;
 }

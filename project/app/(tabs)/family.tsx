@@ -136,6 +136,16 @@ export default function FamilyScreen() {
             <Text style={styles.label}>Email</Text>
             <Text style={styles.value}>{member.email || 'N/A'}</Text>
           </View>
+
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Donor #</Text>
+            <Text style={styles.value}>{member.donorId || 'N/A'}</Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Prayer Group</Text>
+            <Text style={styles.value}>{member.prayerGroup || 'N/A'}</Text>
+          </View>
         </View>
       </View>
     </ScrollView>

@@ -200,6 +200,11 @@ Preferred communication style: Simple, everyday language.
 - Backend API runs on unified server (port 5000)
 - Both services managed by single workflow via `start.sh`
 
+**Family Screen Enhancement (October 2025)**:
+- Members API endpoint now includes household information via JOIN query
+- Family screen displays Donor # and Prayer Group from household data
+- Enhanced member data with donor_id and prayer_group fields
+
 **Admin Web Panel (October 2025)**:
 - Added separate web-based admin panel accessible at `/admin/login.html`
 - Admin panel features:
