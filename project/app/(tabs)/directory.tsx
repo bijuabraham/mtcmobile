@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
-import { Search, Phone, Mail, UserCircle, Home, ChevronRight, ChevronDown, User } from 'lucide-react-native';
+import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Image, Linking } from 'react-native';
+import { Search, Phone, Mail, UserCircle, Home, ChevronRight, ChevronDown, User, MapPin } from 'lucide-react-native';
 import { useChurchConfig } from '@/contexts/ChurchConfigContext';
 import { api } from '@/lib/api';
 import { Household, Member } from '@/types/database';
@@ -125,6 +125,15 @@ export default function DirectoryScreen() {
     );
   };
 
+  const openMaps = (address: string, event?: any) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    const encodedAddress = encodeURIComponent(address);
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+    Linking.openURL(url).catch(err => console.error('Error opening maps:', err));
+  };
+
   const renderHousehold = (household: Household) => {
     const initials = household.familyName
       .split(' ')
@@ -151,6 +160,19 @@ export default function DirectoryScreen() {
             <Text style={styles.memberName}>
               {household.familyName}
             </Text>
+            {household.address && (
+              <TouchableOpacity 
+                style={styles.contactItem}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  openMaps(household.address!);
+                }}
+                activeOpacity={0.7}
+              >
+                <MapPin size={14} color="#666" />
+                <Text style={[styles.contactText, styles.addressLink]}>{household.address}</Text>
+              </TouchableOpacity>
+            )}
             {household.email && (
               <View style={styles.contactItem}>
                 <Mail size={14} color="#666" />
@@ -387,6 +409,10 @@ const styles = StyleSheet.create({
   contactText: {
     fontSize: 14,
     color: '#666',
+  },
+  addressLink: {
+    textDecorationLine: 'underline',
+    color: '#1E90FF',
   },
   emptyState: {
     alignItems: 'center',

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Alert, Image } from 'react-native';
-import { Mail, Phone, Home } from 'lucide-react-native';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Alert, Image, Linking, TouchableOpacity } from 'react-native';
+import { Mail, Phone, Home, MapPin } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChurchConfig } from '@/contexts/ChurchConfigContext';
 import { api } from '@/lib/api';
@@ -74,6 +74,15 @@ export default function FamilyScreen() {
 
   const formatPhone = (phone: string | null) => {
     return phone || 'N/A';
+  };
+
+  const openMaps = (address: string, event?: any) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    const encodedAddress = encodeURIComponent(address);
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+    Linking.openURL(url).catch(err => console.error('Error opening maps:', err));
   };
 
   const renderMember = (memberData: Member) => {
@@ -173,6 +182,19 @@ export default function FamilyScreen() {
             </View>
             <View style={styles.householdDetails}>
               <Text style={styles.householdName}>{household.familyName}</Text>
+              {household.address && (
+                <TouchableOpacity 
+                  style={styles.contactItem}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    openMaps(household.address!);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <MapPin size={14} color="#666" />
+                  <Text style={[styles.contactText, styles.addressLink]}>{household.address}</Text>
+                </TouchableOpacity>
+              )}
               {household.email && (
                 <View style={styles.contactItem}>
                   <Mail size={14} color="#666" />
@@ -370,6 +392,10 @@ const styles = StyleSheet.create({
   contactText: {
     fontSize: 14,
     color: '#666',
+  },
+  addressLink: {
+    textDecorationLine: 'underline',
+    color: '#1E90FF',
   },
   membersList: {
     gap: 12,
