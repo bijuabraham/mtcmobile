@@ -38,6 +38,7 @@ async function loadConfig() {
     document.getElementById('accentColor').value = config.accentColor || '#FFFFFF';
     document.getElementById('logoUrl').value = config.logoUrl || '';
     document.getElementById('calendarId').value = config.calendarId || '';
+    document.getElementById('timezone').value = config.timezone || 'America/New_York';
     
     if (config.apiEndpoints) {
       document.getElementById('iconcmo').value = config.apiEndpoints.iconcmo || '';
@@ -88,6 +89,7 @@ document.getElementById('configForm').addEventListener('submit', async (e) => {
     accentColor: document.getElementById('accentColor').value,
     logoUrl: document.getElementById('logoUrl').value,
     calendarId: document.getElementById('calendarId').value,
+    timezone: document.getElementById('timezone').value,
     apiEndpoints: {
       iconcmo: document.getElementById('iconcmo').value,
       standardPayments: document.getElementById('standardPayments').value
