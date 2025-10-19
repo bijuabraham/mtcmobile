@@ -44,6 +44,7 @@ These templates show the required format for uploading member and household data
 - **phone**: Household phone number
 - **email**: Household email address
 - **prayer_group**: Prayer group name or identifier
+- **donor_number**: Donor ID or number for tracking donations
 
 ### Notes
 - Each row represents one household/family unit

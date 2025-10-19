@@ -258,8 +258,8 @@ router.post('/upload/households', upload.single('file'), async (req, res) => {
         await db.query(
           `UPDATE households 
            SET mail_to = $1, address = $2, city = $3, state = $4, zip = $5, 
-               phone = $6, email = $7, prayer_group = $8, updated_at = NOW()
-           WHERE household_id = $9`,
+               phone = $6, email = $7, prayer_group = $8, donor_id = $9, updated_at = NOW()
+           WHERE household_id = $10`,
           [
             row.mail_to,
             row.address || null,
@@ -269,6 +269,7 @@ router.post('/upload/households', upload.single('file'), async (req, res) => {
             row.phone || null,
             row.email || null,
             row.prayer_group || null,
+            row.donor_number || null,
             row.household_id
           ]
         );
@@ -276,8 +277,8 @@ router.post('/upload/households', upload.single('file'), async (req, res) => {
       } else {
         await db.query(
           `INSERT INTO households 
-           (household_id, mail_to, address, city, state, zip, phone, email, prayer_group)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+           (household_id, mail_to, address, city, state, zip, phone, email, prayer_group, donor_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
           [
             row.household_id,
             row.mail_to,
@@ -287,7 +288,8 @@ router.post('/upload/households', upload.single('file'), async (req, res) => {
             row.zip || null,
             row.phone || null,
             row.email || null,
-            row.prayer_group || null
+            row.prayer_group || null,
+            row.donor_number || null
           ]
         );
         inserted++;
