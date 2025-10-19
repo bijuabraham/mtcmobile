@@ -577,7 +577,12 @@ router.post('/upload/prayer-groups', upload.single('file'), async (req, res) => 
     });
     const grpNameIndex = headers.findIndex(h => {
       const normalized = String(h || '').toLowerCase().replace(/[_\s]/g, '');
-      return normalized.includes('grp') || normalized.includes('group') || normalized.includes('prayer');
+      // Exclude columns with "record" in the name, prioritize columns with "name"
+      if (normalized.includes('record')) return false;
+      return (normalized.includes('grp') && normalized.includes('name')) || 
+             normalized.includes('grpname') ||
+             (normalized.includes('prayer') && normalized.includes('group')) ||
+             normalized.includes('prayergroup');
     });
 
     if (householdIdIndex === -1 || grpNameIndex === -1) {
