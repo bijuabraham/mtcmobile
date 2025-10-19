@@ -22,7 +22,7 @@ class ApiClient {
   private async request(endpoint: string, options: RequestInit = {}) {
     const token = await this.getToken();
     
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...options.headers,
     };
@@ -86,6 +86,10 @@ class ApiClient {
   // Household endpoints
   async getHousehold() {
     return this.request('/households');
+  }
+
+  async getAllHouseholds() {
+    return this.request('/households/directory');
   }
 
   async createHousehold(data: any) {

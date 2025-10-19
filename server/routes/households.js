@@ -1,9 +1,27 @@
 const express = require('express');
 const db = require('../db');
 const { authenticateToken } = require('../middleware/auth');
+const { keysToCamelCase } = require('../utils/camelCase');
 
 const router = express.Router();
 
+// Get all households for directory listing
+router.get('/directory', authenticateToken, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT id, household_id, family_name, address, phone, email, photo_url, donor_id, prayer_group, created_at, updated_at
+       FROM households
+       ORDER BY family_name ASC`
+    );
+
+    res.json(keysToCamelCase(result.rows));
+  } catch (error) {
+    console.error('Get all households error:', error);
+    res.status(500).json({ error: 'Failed to get households' });
+  }
+});
+
+// Get user's own household
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const result = await db.query(

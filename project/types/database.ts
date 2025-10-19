@@ -16,30 +16,36 @@ export interface ChurchConfiguration {
 }
 
 export interface Household {
-  household_id: string;
-  mail_to: string;
+  id: string;
+  householdId: string | null;
+  familyName: string;
+  address: string | null;
   phone: string | null;
   email: string | null;
-  donor: string | null;
-  prayer_group: 'South Bay' | 'Fremont' | 'Trivalley' | 'Central Valley' | 'San Francisco' | null;
-  created_at: string;
-  updated_at: string;
+  photoUrl: string | null;
+  donorId: string | null;
+  prayerGroup: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Member {
-  member_id: string;
-  household_id: string | null;
-  firstname: string;
-  lastname: string;
-  birth_date: string | null;
-  wed_date: string | null;
+  id: string;
+  memberId: string;
+  householdId: string | null;
+  firstName: string;
+  lastName: string;
+  birthDate: string | null;
+  wedDate: string | null;
   relationship: string | null;
   phone: string | null;
   email: string | null;
-  donor_id: string | null;
-  prayer_group: string | null;
-  created_at: string;
-  updated_at: string;
+  photoUrl: string | null;
+  isVisible: boolean;
+  donorId: string | null;
+  prayerGroup: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Donation {

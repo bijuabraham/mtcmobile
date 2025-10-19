@@ -28,10 +28,9 @@ export default function DirectoryScreen() {
   const fetchHouseholds = async () => {
     try {
       setLoading(true);
-      const members = await api.getMembers();
-      const groupedHouseholds: Household[] = [];
-      setHouseholds(groupedHouseholds);
-      setFilteredHouseholds(groupedHouseholds);
+      const data = await api.getAllHouseholds();
+      setHouseholds(data || []);
+      setFilteredHouseholds(data || []);
     } catch (err) {
       console.error('Failed to load households:', err);
     } finally {
@@ -48,9 +47,9 @@ export default function DirectoryScreen() {
     const query = searchQuery.toLowerCase();
     const filtered = households.filter(
       (household) =>
-        household.mail_to.toLowerCase().includes(query) ||
+        household.familyName.toLowerCase().includes(query) ||
         (household.email && household.email.toLowerCase().includes(query)) ||
-        (household.prayer_group && household.prayer_group.toLowerCase().includes(query))
+        (household.prayerGroup && household.prayerGroup.toLowerCase().includes(query))
     );
 
     setFilteredHouseholds(filtered);
@@ -127,22 +126,22 @@ export default function DirectoryScreen() {
   };
 
   const renderHousehold = (household: Household) => {
-    const initials = household.mail_to
+    const initials = household.familyName
       .split(' ')
       .map(word => word.charAt(0))
       .join('')
       .toUpperCase()
       .slice(0, 2);
 
-    const isExpanded = expandedHouseholds.has(household.householdId);
-    const members = householdMembers[household.householdId] || [];
-    const isLoadingMembers = loadingMembers.has(household.householdId);
+    const isExpanded = expandedHouseholds.has(household.id);
+    const members = householdMembers[household.id] || [];
+    const isLoadingMembers = loadingMembers.has(household.id);
 
     return (
-      <View key={household.householdId} style={styles.memberCard}>
+      <View key={household.id} style={styles.memberCard}>
         <TouchableOpacity
           style={styles.memberInfo}
-          onPress={() => toggleHousehold(household.householdId)}
+          onPress={() => toggleHousehold(household.id)}
           activeOpacity={0.7}
         >
           <View style={[styles.avatar, { backgroundColor: primaryColor }]}>
@@ -150,7 +149,7 @@ export default function DirectoryScreen() {
           </View>
           <View style={styles.memberDetails}>
             <Text style={styles.memberName}>
-              {household.mail_to}
+              {household.familyName}
             </Text>
             {household.email && (
               <View style={styles.contactItem}>
@@ -164,10 +163,10 @@ export default function DirectoryScreen() {
                 <Text style={styles.contactText}>{household.phone}</Text>
               </View>
             )}
-            {household.prayer_group && (
+            {household.prayerGroup && (
               <View style={styles.contactItem}>
                 <Home size={14} color="#666" />
-                <Text style={styles.contactText}>{household.prayer_group}</Text>
+                <Text style={styles.contactText}>{household.prayerGroup}</Text>
               </View>
             )}
           </View>
