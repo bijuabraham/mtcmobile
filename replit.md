@@ -236,7 +236,7 @@ Preferred communication style: Simple, everyday language.
 - Added `household_id` column to households table (TEXT, UNIQUE)
 - IconCMO Excel format auto-detection:
   - Detects metadata rows at top of file
-  - Header row mapping: Picture, ID, Mail To, Phone, Address Line 1, City, State, Zip, Donor #
+  - Header row mapping: Picture, ID, Mail To, Phone, Address Line 1, City, State, Zip, Donor #, Prayer Group
   - Automatically combines address components into full address
   - Skips empty rows during processing
 - Field mapping:
@@ -245,5 +245,6 @@ Preferred communication style: Simple, everyday language.
   - Phone → phone
   - Address components → combined address field
   - Donor # → donor_id
+  - Prayer Group → prayer_group (optional)
 - Supports both IconCMO format and standard CSV template format
 - Returns format type in API response for transparency

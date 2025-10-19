@@ -250,7 +250,8 @@ router.post('/upload/households', upload.single('file'), async (req, res) => {
           city: row[5] || null,                           // City column
           state: row[6] || null,                          // State column
           zip: row[7] ? String(row[7]) : null,           // Zip column
-          donor_id: row[8] ? String(row[8]) : null       // Donor # column
+          donor_id: row[8] ? String(row[8]) : null,      // Donor # column
+          prayer_group: row[9] || null                    // Prayer Group column (optional)
         };
         
         // Only add rows with valid household_id and mail_to
