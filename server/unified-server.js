@@ -27,6 +27,10 @@ app.use('/admin', express.static(adminPath, {
   extensions: ['html']
 }));
 
+// Serve template files
+const templatesPath = path.join(__dirname, '..', 'templates');
+app.use('/templates', express.static(templatesPath));
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/config', configRoutes);
