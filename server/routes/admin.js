@@ -12,9 +12,13 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel'
+      'application/vnd.ms-excel',
+      'application/octet-stream'
     ];
-    if (allowedTypes.includes(file.mimetype)) {
+    const allowedExtensions = ['.xlsx', '.xls'];
+    const fileExtension = file.originalname.toLowerCase().slice(file.originalname.lastIndexOf('.'));
+    
+    if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(fileExtension)) {
       cb(null, true);
     } else {
       cb(new Error('Only Excel files (.xlsx, .xls) are allowed'));
@@ -219,24 +223,65 @@ router.post('/upload/households', upload.single('file'), async (req, res) => {
     const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
-    const data = xlsx.utils.sheet_to_json(worksheet);
+    
+    // First, try reading as raw array to detect IconCMO format
+    const rawRows = xlsx.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+    let data;
+    let isIconCMOFormat = false;
+
+    // Check if this is IconCMO format (row 5 contains headers: Picture, ID, Mail To, Phone, etc.)
+    if (rawRows.length > 6 && rawRows[5] && rawRows[5][1] === 'ID' && rawRows[5][2] === 'Mail To') {
+      isIconCMOFormat = true;
+      // Skip metadata rows (0-5) and get actual data starting from row 7 (index 6)
+      const headers = rawRows[5]; // Row 5 is the header row
+      data = [];
+      
+      for (let i = 6; i < rawRows.length; i++) {
+        const row = rawRows[i];
+        // Skip empty rows
+        if (!row || row.every(cell => !cell)) continue;
+        
+        // Map columns to our schema
+        const mappedRow = {
+          household_id: row[1] ? String(row[1]) : null,  // ID column
+          mail_to: row[2] || null,                        // Mail To column
+          phone: row[3] || null,                          // Phone column
+          address: row[4] || null,                        // Address Line 1 column
+          city: row[5] || null,                           // City column
+          state: row[6] || null,                          // State column
+          zip: row[7] ? String(row[7]) : null,           // Zip column
+          donor_id: row[8] ? String(row[8]) : null       // Donor # column
+        };
+        
+        // Only add rows with valid household_id and mail_to
+        if (mappedRow.household_id && mappedRow.mail_to) {
+          data.push(mappedRow);
+        }
+      }
+    } else {
+      // Standard CSV format - use normal parsing
+      data = xlsx.utils.sheet_to_json(worksheet);
+    }
 
     if (data.length === 0) {
-      return res.status(400).json({ error: 'Excel file is empty' });
+      return res.status(400).json({ error: 'Excel file is empty or no valid data rows found' });
     }
 
     if (data.length > 10000) {
       return res.status(400).json({ error: 'Too many rows. Maximum 10,000 rows allowed' });
     }
 
-    const requiredColumns = ['household_id', 'mail_to'];
-    const firstRow = data[0];
-    const missingColumns = requiredColumns.filter(col => !(col in firstRow));
-    
-    if (missingColumns.length > 0) {
-      return res.status(400).json({ 
-        error: `Missing required columns: ${missingColumns.join(', ')}` 
-      });
+    // Validate required columns for standard format
+    if (!isIconCMOFormat) {
+      const requiredColumns = ['household_id', 'mail_to'];
+      const firstRow = data[0];
+      const missingColumns = requiredColumns.filter(col => !(col in firstRow));
+      
+      if (missingColumns.length > 0) {
+        return res.status(400).json({ 
+          error: `Missing required columns: ${missingColumns.join(', ')}` 
+        });
+      }
     }
 
     let inserted = 0;
@@ -244,9 +289,7 @@ router.post('/upload/households', upload.single('file'), async (req, res) => {
 
     for (const row of data) {
       if (!row.household_id || !row.mail_to) {
-        return res.status(400).json({ 
-          error: `Invalid row: household_id and mail_to are required` 
-        });
+        continue; // Skip invalid rows instead of failing entire upload
       }
 
       const checkResult = await db.query(
@@ -254,22 +297,25 @@ router.post('/upload/households', upload.single('file'), async (req, res) => {
         [row.household_id]
       );
 
+      // Build full address from components if available
+      let fullAddress = row.address || null;
+      if (isIconCMOFormat && row.address && row.city && row.state && row.zip) {
+        fullAddress = `${row.address}, ${row.city}, ${row.state} ${row.zip}`;
+      }
+
       if (checkResult.rows.length > 0) {
         await db.query(
           `UPDATE households 
-           SET mail_to = $1, address = $2, city = $3, state = $4, zip = $5, 
-               phone = $6, email = $7, prayer_group = $8, donor_id = $9, updated_at = NOW()
-           WHERE household_id = $10`,
+           SET family_name = $1, address = $2, phone = $3, email = $4, 
+               prayer_group = $5, donor_id = $6, updated_at = NOW()
+           WHERE household_id = $7`,
           [
-            row.mail_to,
-            row.address || null,
-            row.city || null,
-            row.state || null,
-            row.zip || null,
+            row.mail_to,              // family_name (Mail To)
+            fullAddress,              // address
             row.phone || null,
             row.email || null,
             row.prayer_group || null,
-            row.donor_number || null,
+            row.donor_id || row.donor_number || null,
             row.household_id
           ]
         );
@@ -277,19 +323,16 @@ router.post('/upload/households', upload.single('file'), async (req, res) => {
       } else {
         await db.query(
           `INSERT INTO households 
-           (household_id, mail_to, address, city, state, zip, phone, email, prayer_group, donor_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+           (household_id, family_name, address, phone, email, prayer_group, donor_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
           [
             row.household_id,
-            row.mail_to,
-            row.address || null,
-            row.city || null,
-            row.state || null,
-            row.zip || null,
+            row.mail_to,              // family_name (Mail To)
+            fullAddress,              // address
             row.phone || null,
             row.email || null,
             row.prayer_group || null,
-            row.donor_number || null
+            row.donor_id || row.donor_number || null
           ]
         );
         inserted++;
@@ -300,7 +343,8 @@ router.post('/upload/households', upload.single('file'), async (req, res) => {
       success: true,
       inserted,
       updated,
-      total: data.length
+      total: data.length,
+      format: isIconCMOFormat ? 'IconCMO' : 'Standard'
     });
   } catch (error) {
     console.error('Upload households error:', error);

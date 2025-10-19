@@ -211,6 +211,7 @@ Preferred communication style: Simple, everyday language.
   - Church configuration management (name, colors, logo, calendar ID, API endpoints)
   - **Announcements management** - Two announcement slots with start/end dates (database-driven)
   - Excel file upload for members, households, and donations data (bulk import)
+  - **IconCMO format auto-detection** for households and donations uploads
   - Downloadable CSV templates for members, households, and donations data
   - Live configuration preview
   - Role-based access control (admins only)
@@ -219,13 +220,30 @@ Preferred communication style: Simple, everyday language.
   - Admin middleware validates both token claim and database role
   - URL validation prevents XSS attacks
   - Excel upload validation (file type, size limits, required columns)
+  - Flexible MIME type detection for .xls and .xlsx files
 - Admin user: john.doe@example.com (is_admin=true)
 - Static files served from `admin/` directory
 - Templates served from `templates/` directory
 - API endpoints: 
   - PUT /api/admin/config
   - POST /api/admin/upload/members
-  - POST /api/admin/upload/households
-  - POST /api/admin/upload/donations
+  - POST /api/admin/upload/households (IconCMO format supported)
+  - POST /api/admin/upload/donations (IconCMO format supported)
   - GET /api/announcements/admin/all
   - POST /api/announcements/admin/save
+
+**Households Upload Enhancement (October 2025)**:
+- Added `household_id` column to households table (TEXT, UNIQUE)
+- IconCMO Excel format auto-detection:
+  - Detects metadata rows at top of file
+  - Header row mapping: Picture, ID, Mail To, Phone, Address Line 1, City, State, Zip, Donor #
+  - Automatically combines address components into full address
+  - Skips empty rows during processing
+- Field mapping:
+  - ID → household_id (external system identifier)
+  - Mail To → family_name
+  - Phone → phone
+  - Address components → combined address field
+  - Donor # → donor_id
+- Supports both IconCMO format and standard CSV template format
+- Returns format type in API response for transparency
