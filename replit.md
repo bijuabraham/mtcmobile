@@ -249,6 +249,22 @@ Preferred communication style: Simple, everyday language.
 - Supports both IconCMO format and standard CSV template format
 - Returns format type in API response for transparency
 
+**Individuals/Members Upload Enhancement (October 2025)**:
+- IconCMO Excel format auto-detection for members/individuals uploads
+- Header row mapping: Family ID, ID, Last Name, First Name, Preferred, Relationship, Mobile Phone, Personal Email, Birth Month, Birth Day Number, Marriage
+- Field mapping:
+  - Family ID → Links to households.household_id for automatic household association
+  - ID → member_id (external system identifier)
+  - Last Name, First Name → last_name, first_name
+  - Relationship → relationship (Husband, Wife, Son, Daughter, etc.)
+  - Mobile Phone → phone
+  - Personal Email → email
+  - Birth Month + Birth Day Number → birth_date (combined into YYYY-MM-DD format, year defaults to 2000)
+  - Marriage (Excel serial date) → wed_date (converted from Excel date format)
+- Auto-links members to households via Family ID lookup
+- Supports both IconCMO format and standard CSV template format
+- Returns format type, inserted, updated, and error counts in API response
+
 **Donations Linking (October 2025)**:
 - Added `household_id` column to users table to link users to their households
 - Updated donations API endpoint to fetch donations by household_id instead of user_id
@@ -256,3 +272,9 @@ Preferred communication style: Simple, everyday language.
 - Donations imported via IconCMO Excel upload are automatically linked to households via household_id
 - All API responses use camelCase formatting for consistency
 - Fixed TypeScript interfaces across all database models (Member, Household, Donation)
+
+**Database Status (October 2025)**:
+- 186 households imported from IconCMO system
+- 658 individual members imported and linked to households
+- All members successfully linked to their households via Family ID
+- Full IconCMO data integration complete (Households, Individuals, Donations)
