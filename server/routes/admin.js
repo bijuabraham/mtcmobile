@@ -317,64 +317,96 @@ router.post('/upload/donations', upload.single('file'), async (req, res) => {
     const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
-    const data = xlsx.utils.sheet_to_json(worksheet);
+    const rawData = xlsx.utils.sheet_to_json(worksheet);
+
+    if (rawData.length === 0) {
+      return res.status(400).json({ error: 'Excel file is empty' });
+    }
+
+    let data = rawData;
+    let isIconCMOFormat = false;
+
+    // Check if this is IconCMO format (has metadata rows at the top)
+    if (rawData.length > 2 && rawData[2] && rawData[2]['Donations Report'] === 'Household ID') {
+      // IconCMO format detected - skip first 2 metadata rows
+      data = rawData.slice(2);
+      isIconCMOFormat = true;
+    }
 
     if (data.length === 0) {
-      return res.status(400).json({ error: 'Excel file is empty' });
+      return res.status(400).json({ error: 'No data rows found in Excel file' });
     }
 
     if (data.length > 10000) {
       return res.status(400).json({ error: 'Too many rows. Maximum 10,000 rows allowed' });
     }
 
-    const requiredColumns = ['household_id', 'donor_number', 'fund', 'amount'];
-    const firstRow = data[0];
-    const missingColumns = requiredColumns.filter(col => !(col in firstRow));
-    
-    if (missingColumns.length > 0) {
-      return res.status(400).json({ 
-        error: `Missing required columns: ${missingColumns.join(', ')}` 
-      });
-    }
-
     let inserted = 0;
     let skipped = 0;
 
     for (const row of data) {
-      if (!row.household_id || !row.donor_number || !row.fund || !row.amount) {
+      let householdId, donorNumber, fund, amount;
+
+      if (isIconCMOFormat) {
+        // IconCMO format mapping
+        householdId = row['Donations Report'];
+        donorNumber = row['__EMPTY'];
+        fund = row['__EMPTY_1'];
+        amount = row['__EMPTY_2'];
+      } else {
+        // Standard template format
+        householdId = row.household_id;
+        donorNumber = row.donor_number;
+        fund = row.fund;
+        amount = row.amount;
+      }
+
+      // Skip header row (if it wasn't already skipped)
+      if (householdId === 'Household ID' || householdId === 'household_id') {
         skipped++;
         continue;
       }
 
-      const amount = parseFloat(row.amount);
-      if (isNaN(amount)) {
-        return res.status(400).json({ 
-          error: `Invalid amount value: ${row.amount}` 
-        });
+      // Skip rows with missing required data
+      if (!householdId || !donorNumber || !fund || amount == null) {
+        skipped++;
+        continue;
+      }
+
+      const amountValue = parseFloat(amount);
+      if (isNaN(amountValue)) {
+        skipped++;
+        continue;
       }
 
       const donationDate = row.donation_date || new Date().toISOString().split('T')[0];
 
-      await db.query(
-        `INSERT INTO donations 
-         (household_id, donor_number, category, amount, donation_date, updated_at)
-         VALUES ($1, $2, $3, $4, $5, NOW())`,
-        [
-          row.household_id,
-          row.donor_number,
-          row.fund,
-          amount,
-          donationDate
-        ]
-      );
-      inserted++;
+      try {
+        await db.query(
+          `INSERT INTO donations 
+           (household_id, donor_number, category, amount, donation_date, updated_at)
+           VALUES ($1, $2, $3, $4, $5, NOW())`,
+          [
+            String(householdId),
+            String(donorNumber),
+            String(fund),
+            amountValue,
+            donationDate
+          ]
+        );
+        inserted++;
+      } catch (dbError) {
+        console.error('Error inserting donation:', dbError.message);
+        skipped++;
+      }
     }
 
     res.json({
       success: true,
       inserted,
       skipped,
-      total: data.length
+      total: data.length,
+      format: isIconCMOFormat ? 'IconCMO' : 'Standard'
     });
   } catch (error) {
     console.error('Upload donations error:', error);
