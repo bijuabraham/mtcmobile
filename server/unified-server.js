@@ -41,9 +41,22 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Church Management API is running' });
 });
 
-// Serve API info page at root (production mode)
-app.get('/', (req, res) => {
-  res.status(200).send(`
+// In development, proxy to Expo dev server on port 8081
+// In production, serve API info page
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/', createProxyMiddleware({
+    target: 'http://localhost:8081',
+    changeOrigin: true,
+    ws: true,
+    logLevel: 'silent',
+    filter: (pathname, req) => {
+      return !pathname.startsWith('/admin') && !pathname.startsWith('/api');
+    }
+  }));
+} else {
+  // Production: Serve API info page at root
+  app.get('/', (req, res) => {
+    res.status(200).send(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -128,20 +141,8 @@ app.get('/', (req, res) => {
   </div>
 </body>
 </html>
-  `);
-});
-
-// In development, proxy other requests to Expo dev server on port 8081 (if available)
-if (process.env.NODE_ENV !== 'production') {
-  app.use('/', createProxyMiddleware({
-    target: 'http://localhost:8081',
-    changeOrigin: true,
-    ws: true,
-    logLevel: 'silent',
-    filter: (pathname, req) => {
-      return !pathname.startsWith('/admin') && !pathname.startsWith('/api') && pathname !== '/';
-    }
-  }));
+    `);
+  });
 }
 
 // Error handler
