@@ -9,6 +9,7 @@ import { Member, Household } from '@/types/database';
 export default function FamilyScreen() {
   const [member, setMember] = useState<Member | null>(null);
   const [household, setHousehold] = useState<Household | null>(null);
+  const [householdMembers, setHouseholdMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { config } = useChurchConfig();
@@ -24,12 +25,12 @@ export default function FamilyScreen() {
 
     try {
       setLoading(true);
-      const data = await api.getMembers();
-      const userMember = data.find((m: Member) => m.email === user.email);
+      const allMembers = await api.getMembers();
+      const userMember = allMembers.find((m: Member) => m.email === user.email);
       if (userMember) {
         setMember(userMember);
         if (userMember.householdId) {
-          await fetchHousehold(userMember.householdId);
+          await fetchHousehold(userMember.householdId, allMembers);
         }
       }
     } catch (err) {
@@ -39,15 +40,21 @@ export default function FamilyScreen() {
     }
   };
 
-  const fetchHousehold = async (householdId: string) => {
+  const fetchHousehold = async (householdId: string, allMembers: Member[]) => {
     try {
+      const members = allMembers.filter((m: Member) => m.householdId === householdId);
+      setHouseholdMembers(members);
+
       const households = await api.getAllHouseholds();
       const userHousehold = households.find((h: Household) => h.id === householdId);
       if (userHousehold) {
         setHousehold(userHousehold);
+      } else {
+        console.warn(`Household with ID ${householdId} not found in households list`);
       }
     } catch (err) {
       console.error('Failed to load household information:', err);
+      Alert.alert('Error', 'Failed to load household information. Some data may be incomplete.');
     }
   };
 
@@ -67,6 +74,38 @@ export default function FamilyScreen() {
 
   const formatPhone = (phone: string | null) => {
     return phone || 'N/A';
+  };
+
+  const renderMember = (memberData: Member) => {
+    const initials = `${memberData.firstName.charAt(0)}${memberData.lastName.charAt(0)}`.toUpperCase();
+
+    return (
+      <View key={memberData.memberId} style={styles.memberRow}>
+        <View style={[styles.memberAvatar, { backgroundColor: primaryColor }]}>
+          <Text style={styles.memberAvatarText}>{initials}</Text>
+        </View>
+        <View style={styles.memberInfo}>
+          <Text style={styles.memberText}>
+            {memberData.firstName} {memberData.lastName}
+          </Text>
+          {memberData.relationship && (
+            <Text style={styles.memberRelationship}>{memberData.relationship}</Text>
+          )}
+          {memberData.email && (
+            <View style={styles.memberContactItem}>
+              <Mail size={12} color="#888" />
+              <Text style={styles.memberContactText}>{memberData.email}</Text>
+            </View>
+          )}
+          {memberData.phone && (
+            <View style={styles.memberContactItem}>
+              <Phone size={12} color="#888" />
+              <Text style={styles.memberContactText}>{memberData.phone}</Text>
+            </View>
+          )}
+        </View>
+      </View>
+    );
   };
 
   if (loading) {
@@ -157,66 +196,17 @@ export default function FamilyScreen() {
         </View>
       )}
 
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Member Information</Text>
-        </View>
+      {householdMembers.length > 0 && (
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Household Members</Text>
+          </View>
 
-        <View style={styles.photoContainer}>
-          <View style={[styles.photoPlaceholder, { backgroundColor: primaryColor }]}>
-            <Text style={styles.photoPlaceholderText}>
-              {member.firstName.charAt(0).toUpperCase()}{member.lastName.charAt(0).toUpperCase()}
-            </Text>
+          <View style={styles.membersList}>
+            {householdMembers.map(renderMember)}
           </View>
         </View>
-
-        <View style={styles.infoContainer}>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>First Name</Text>
-            <Text style={styles.value}>{member.firstName}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Last Name</Text>
-            <Text style={styles.value}>{member.lastName}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Relationship</Text>
-            <Text style={styles.value}>{member.relationship || 'N/A'}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Birth Date</Text>
-            <Text style={styles.value}>{formatBirthDate(member.birthDate)}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Wedding Date</Text>
-            <Text style={styles.value}>{formatWeddingDate(member.wedDate)}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Phone</Text>
-            <Text style={styles.value}>{formatPhone(member.phone)}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Email</Text>
-            <Text style={styles.value}>{member.email || 'N/A'}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Donor #</Text>
-            <Text style={styles.value}>{member.donorId || 'N/A'}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Prayer Group</Text>
-            <Text style={styles.value}>{member.prayerGroup || 'N/A'}</Text>
-          </View>
-        </View>
-      </View>
+      )}
     </ScrollView>
   );
 }
@@ -380,5 +370,52 @@ const styles = StyleSheet.create({
   contactText: {
     fontSize: 14,
     color: '#666',
+  },
+  membersList: {
+    gap: 12,
+  },
+  memberRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 8,
+    paddingLeft: 8,
+  },
+  memberAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  memberAvatarText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  memberInfo: {
+    flex: 1,
+  },
+  memberText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 2,
+  },
+  memberRelationship: {
+    fontSize: 13,
+    color: '#888',
+    fontStyle: 'italic',
+    marginBottom: 4,
+  },
+  memberContactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 2,
+  },
+  memberContactText: {
+    fontSize: 12,
+    color: '#888',
   },
 });
