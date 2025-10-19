@@ -34,10 +34,16 @@ export default function FamilyScreen() {
     }
   };
 
-  const formatDate = (dateString: string | null) => {
+  const formatBirthDate = (dateString: string | null) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+  };
+
+  const formatWeddingDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
   };
 
   const formatPhone = (phone: string | null) => {
@@ -119,12 +125,12 @@ export default function FamilyScreen() {
 
           <View style={styles.infoRow}>
             <Text style={styles.label}>Birth Date</Text>
-            <Text style={styles.value}>{formatDate(member.birthDate)}</Text>
+            <Text style={styles.value}>{formatBirthDate(member.birthDate)}</Text>
           </View>
 
           <View style={styles.infoRow}>
             <Text style={styles.label}>Wedding Date</Text>
-            <Text style={styles.value}>{formatDate(member.wedDate)}</Text>
+            <Text style={styles.value}>{formatWeddingDate(member.wedDate)}</Text>
           </View>
 
           <View style={styles.infoRow}>
