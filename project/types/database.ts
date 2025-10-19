@@ -1,19 +1,19 @@
 export interface ChurchConfiguration {
   id: string;
-  church_name: string;
-  primary_color: string;
-  secondary_color: string;
-  accent_color: string;
-  logo_url: string | null;
-  api_endpoints: {
-    iconcmo: string;
-    announcements: string;
-    standardPayments: string;
+  churchName: string;
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  logoUrl: string | null;
+  apiEndpoints: {
+    iconcmo?: string;
+    announcements?: string;
+    standardPayments?: string;
   };
-  calendar_id: string;
+  calendarId: string;
   timezone: string;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Household {

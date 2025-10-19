@@ -66,7 +66,7 @@ Preferred communication style: Simple, everyday language.
 
 **Data Models** (server/schema.sql):
 - `users`: User accounts with hashed passwords
-- `church_configurations`: White-label branding and API endpoints (singleton pattern)
+- `church_configurations`: White-label branding, timezone, and API endpoints (singleton pattern)
 - `households`: Family/household information with contact details
 - `members`: Individual church members linked to households
 - `donations`: User donation records with categories and payment methods
@@ -208,7 +208,8 @@ Preferred communication style: Simple, everyday language.
 **Admin Web Panel (October 2025)**:
 - Added separate web-based admin panel accessible at `/admin/login.html`
 - Admin panel features:
-  - Church configuration management (name, colors, logo, calendar ID, API endpoints)
+  - Church configuration management (name, colors, logo, calendar ID, timezone, API endpoints)
+  - **Timezone Configuration** - Dropdown selector with common timezones (Eastern, Central, Pacific, etc.) stored in database
   - **Announcements management** - Two announcement slots with start/end dates (database-driven)
   - Excel file upload for members, households, and donations data (bulk import)
   - **IconCMO format auto-detection** for households, members, and donations uploads
