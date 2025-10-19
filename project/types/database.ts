@@ -11,6 +11,7 @@ export interface ChurchConfiguration {
     standardPayments: string;
   };
   calendar_id: string;
+  timezone: string;
   created_at: string;
   updated_at: string;
 }
