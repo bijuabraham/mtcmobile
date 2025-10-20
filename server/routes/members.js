@@ -12,19 +12,26 @@ router.get('/', authenticateToken, async (req, res) => {
     // Get the current user's email to check if they are in the members table
     const userResult = await db.query('SELECT email FROM users WHERE id = $1', [req.userId]);
     if (userResult.rows.length === 0) {
+      console.log('❌ Directory access: User not found, userId:', req.userId);
       return res.status(404).json({ error: 'User not found' });
     }
     
     const userEmail = userResult.rows[0].email;
+    console.log('🔍 Directory access attempt by:', userEmail);
     
     // Check if the user's email exists in the members table
     const memberCheck = await db.query('SELECT id FROM members WHERE LOWER(email) = LOWER($1)', [userEmail]);
     const userIsInDirectory = memberCheck.rows.length > 0;
     
+    console.log('📋 Email found in members table:', userIsInDirectory, '(matches:', memberCheck.rows.length, ')');
+    
     // If user's email is not in members table, return empty array
     if (!userIsInDirectory) {
+      console.log('⛔ Directory access DENIED - email not in members table');
       return res.json([]);
     }
+    
+    console.log('✅ Directory access GRANTED - returning', search ? 'filtered' : 'full', 'directory');
     
     let query = `
       SELECT 
