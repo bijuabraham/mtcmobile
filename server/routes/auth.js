@@ -1,8 +1,10 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const db = require('../db');
 const { generateToken } = require('../utils/jwt');
 const { authenticateToken } = require('../middleware/auth');
+const { sendVerificationEmail } = require('../utils/mail');
 
 const router = express.Router();
 const SALT_ROUNDS = 10;
@@ -30,20 +32,49 @@ router.post('/signup', async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
     
+    // Generate verification token (secure random 32-byte hex string)
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    
+    // Token expires in 24 hours
+    const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    
     const result = await db.query(
-      'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email, created_at',
-      [email.toLowerCase(), passwordHash]
+      `INSERT INTO users (email, password_hash, email_verified, verification_token, verification_token_expires) 
+       VALUES ($1, $2, FALSE, $3, $4) 
+       RETURNING id, email, created_at, email_verified`,
+      [email.toLowerCase(), passwordHash, verificationToken, tokenExpires]
     );
 
     const user = result.rows[0];
-    const token = generateToken(user.id);
 
+    // Get church name from configuration for personalized email
+    let churchName = 'Church Management';
+    try {
+      const configResult = await db.query('SELECT church_name FROM church_configurations LIMIT 1');
+      if (configResult.rows.length > 0 && configResult.rows[0].church_name) {
+        churchName = configResult.rows[0].church_name;
+      }
+    } catch (err) {
+      console.log('Could not fetch church name, using default');
+    }
+
+    // Send verification email
+    try {
+      await sendVerificationEmail(user.email, verificationToken, churchName);
+      console.log(`Verification email sent to ${user.email}`);
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      // Don't fail the signup if email fails, but log the error
+    }
+
+    // Don't return a token yet - user needs to verify email first
     res.status(201).json({
+      message: 'Account created successfully! Please check your email to verify your account.',
       user: {
         id: user.id,
-        email: user.email
-      },
-      token
+        email: user.email,
+        emailVerified: false
+      }
     });
   } catch (error) {
     console.error('Signup error:', error);
