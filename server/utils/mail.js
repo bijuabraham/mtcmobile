@@ -131,7 +131,79 @@ If you didn't create this account, you can safely ignore this email.
   });
 }
 
+/**
+ * Send password reset email to users
+ */
+async function sendPasswordResetEmail(userEmail, resetToken, churchName = 'Church') {
+  const resetUrl = `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/api/auth/reset-password?token=${resetToken}`;
+  
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+        .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+        .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
+        .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 15px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Password Reset Request</h1>
+        </div>
+        <div class="content">
+          <h2>Reset Your Password</h2>
+          <p>We received a request to reset the password for your ${churchName} account.</p>
+          <p>To reset your password, click the button below:</p>
+          <p style="text-align: center;">
+            <a href="${resetUrl}" class="button">Reset Password</a>
+          </p>
+          <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+          <p style="word-break: break-all; background: #fff; padding: 10px; border-radius: 4px;">${resetUrl}</p>
+          <div class="warning">
+            <strong>⏰ This link will expire in 1 hour.</strong>
+          </div>
+          <p>If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
+        </div>
+        <div class="footer">
+          <p>&copy; ${new Date().getFullYear()} ${churchName}. All rights reserved.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const textContent = `
+Password Reset Request - ${churchName}
+
+We received a request to reset the password for your ${churchName} account.
+
+To reset your password, click the link below:
+
+${resetUrl}
+
+This link will expire in 1 hour.
+
+If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.
+
+© ${new Date().getFullYear()} ${churchName}. All rights reserved.
+  `.trim();
+
+  return sendEmail({
+    to: userEmail,
+    subject: `Password Reset Request - ${churchName}`,
+    html: htmlContent,
+    text: textContent,
+  });
+}
+
 module.exports = {
   sendEmail,
   sendVerificationEmail,
+  sendPasswordResetEmail,
 };
