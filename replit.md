@@ -16,7 +16,7 @@ Preferred communication style: Simple, everyday language.
 ### Backend
 - **Database**: Replit PostgreSQL, managed via environment variables.
 - **Server**: Node.js with Express (port 3000), providing RESTful API endpoints for all application data.
-- **Authentication**: Custom JWT-based system with email/password (bcrypt hashing) for secure session management. Includes email verification via Replit Mail - users must verify their email address before logging in.
+- **Authentication**: Custom JWT-based system with email/password (bcrypt hashing) for secure session management. Includes email verification via Replit Mail - users must verify their email address before logging in. Password reset functionality allows users to request a password reset link via email (1-hour expiration).
 - **Data Models**: Key tables include `users`, `church_configurations` (singleton with contact info fields), `households`, `members`, `donations`, `announcements`, and `contact_us`.
 - **Admin Panel**: A separate web-based admin panel (`/admin/login.html`) allows church configuration, contact us configuration (vicar info, church address, executive board), announcement management, bulk data uploads (members, households, donations, prayer groups with IconCMO format auto-detection), and admin user management with role-based access control.
 - **Contact Us Configuration**: The church_configurations table includes fields for vicar information (name, photo URL, phone, email), church address, and executive board members (stored as JSONB array with 8 positions: Vice President, Secretary, Treasurer - Cash, Treasurer - Accounts, Lay Leader Malayalam, Lay Leader English, Mandalam Member, Assembly Members). Each board member can have name, phone, and email.
@@ -27,6 +27,7 @@ Preferred communication style: Simple, everyday language.
 ### Data Flow
 - **Authentication**: Users sign up and receive a verification email. After verifying their email address, they can log in to receive a JWT token, stored in AsyncStorage, and used for subsequent API requests.
 - **Email Verification**: New users receive a verification email with a secure 24-hour token. Users cannot log in until their email is verified.
+- **Password Reset**: Users can request a password reset link via the "Forgot Password?" link on the login screen. They receive an email with a secure 1-hour token that allows them to set a new password via a web-based form.
 - **Directory Privacy**: Only users whose email address exists in the members table can view the directory. This ensures only registered church members have access.
 - **Data Fetching**: An API client (`project/lib/api.ts`) handles all backend communication, managing loading states and error handling.
 - **Donation Tracking**: Donations are linked to `households` rather than individual users, allowing family-based tracking.
