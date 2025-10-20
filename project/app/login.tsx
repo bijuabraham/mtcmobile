@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingVi
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChurchConfig } from '@/contexts/ChurchConfigContext';
+import { api } from '@/lib/api';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -28,23 +29,12 @@ export default function LoginScreen() {
       setError('');
 
       try {
-        const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000'}/api/auth/forgot-password`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          alert('Password reset link sent! Please check your email.');
-          setIsForgotPassword(false);
-          setEmail('');
-        } else {
-          setError(data.error || 'Failed to send password reset email');
-        }
+        await api.forgotPassword(email);
+        alert('Password reset link sent! Please check your email.');
+        setIsForgotPassword(false);
+        setEmail('');
       } catch (err) {
-        setError('Failed to send password reset email');
+        setError(err instanceof Error ? err.message : 'Failed to send password reset email');
       } finally {
         setLoading(false);
       }

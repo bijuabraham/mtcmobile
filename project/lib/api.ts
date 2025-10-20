@@ -70,6 +70,13 @@ class ApiClient {
     await AsyncStorage.removeItem('auth_token');
   }
 
+  async forgotPassword(email: string) {
+    return this.request('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
   async changePassword(currentPassword: string, newPassword: string) {
     return this.request('/auth/change-password', {
       method: 'POST',
