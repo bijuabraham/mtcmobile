@@ -7,6 +7,7 @@ import { useChurchConfig } from '@/contexts/ChurchConfigContext';
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
@@ -25,6 +26,11 @@ export default function LoginScreen() {
       return;
     }
 
+    if (isSignUp && password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -32,9 +38,10 @@ export default function LoginScreen() {
       if (isSignUp) {
         await signUp(email, password);
         setError('');
-        alert('Account created successfully! You can now sign in.');
+        alert('Account created successfully! Please check your email to verify your account before signing in.');
         setIsSignUp(false);
         setPassword('');
+        setConfirmPassword('');
       } else {
         await signIn(email, password);
         router.replace('/(tabs)');
@@ -89,6 +96,17 @@ export default function LoginScreen() {
             editable={!loading}
           />
 
+          {isSignUp && (
+            <TextInput
+              style={styles.input}
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              editable={!loading}
+            />
+          )}
+
           <TouchableOpacity
             style={[styles.button, { backgroundColor: primaryColor }]}
             onPress={handleLogin}
@@ -104,6 +122,8 @@ export default function LoginScreen() {
             onPress={() => {
               setIsSignUp(!isSignUp);
               setError('');
+              setPassword('');
+              setConfirmPassword('');
             }}
             disabled={loading}
           >
