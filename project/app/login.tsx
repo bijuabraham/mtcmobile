@@ -11,11 +11,47 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const { signIn, signUp } = useAuth();
   const { config } = useChurchConfig();
   const router = useRouter();
 
   const handleLogin = async () => {
+    if (isForgotPassword) {
+      // Forgot password flow
+      if (!email) {
+        setError('Please enter your email address');
+        return;
+      }
+
+      setLoading(true);
+      setError('');
+
+      try {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000'}/api/auth/forgot-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          alert('Password reset link sent! Please check your email.');
+          setIsForgotPassword(false);
+          setEmail('');
+        } else {
+          setError(data.error || 'Failed to send password reset email');
+        }
+      } catch (err) {
+        setError('Failed to send password reset email');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Regular sign in / sign up flow
     if (!email || !password) {
       setError('Please enter both email and password');
       return;
@@ -73,7 +109,9 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.formContainer}>
-          <Text style={styles.title}>{isSignUp ? 'Create Account' : 'Welcome Back'}</Text>
+          <Text style={styles.title}>
+            {isForgotPassword ? 'Reset Password' : isSignUp ? 'Create Account' : 'Welcome Back'}
+          </Text>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -87,24 +125,34 @@ export default function LoginScreen() {
             editable={!loading}
           />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            editable={!loading}
-          />
+          {!isForgotPassword && (
+            <>
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                editable={!loading}
+              />
 
-          {isSignUp && (
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm Password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              editable={!loading}
-            />
+              {isSignUp && (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Confirm Password"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry
+                  editable={!loading}
+                />
+              )}
+            </>
+          )}
+
+          {isForgotPassword && (
+            <Text style={styles.helperText}>
+              Enter your email address and we'll send you a link to reset your password.
+            </Text>
           )}
 
           <TouchableOpacity
@@ -113,14 +161,37 @@ export default function LoginScreen() {
             disabled={loading}
           >
             <Text style={styles.buttonText}>
-              {loading ? (isSignUp ? 'Creating Account...' : 'Signing In...') : (isSignUp ? 'Create Account' : 'Sign In')}
+              {loading 
+                ? (isForgotPassword ? 'Sending...' : isSignUp ? 'Creating Account...' : 'Signing In...') 
+                : (isForgotPassword ? 'Send Reset Link' : isSignUp ? 'Create Account' : 'Sign In')
+              }
             </Text>
           </TouchableOpacity>
+
+          {!isForgotPassword && !isSignUp && (
+            <TouchableOpacity
+              style={styles.forgotPasswordButton}
+              onPress={() => {
+                setIsForgotPassword(true);
+                setError('');
+                setPassword('');
+              }}
+              disabled={loading}
+            >
+              <Text style={[styles.forgotPasswordText, { color: primaryColor }]}>
+                Forgot Password?
+              </Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={styles.toggleButton}
             onPress={() => {
-              setIsSignUp(!isSignUp);
+              if (isForgotPassword) {
+                setIsForgotPassword(false);
+              } else {
+                setIsSignUp(!isSignUp);
+              }
               setError('');
               setPassword('');
               setConfirmPassword('');
@@ -128,7 +199,12 @@ export default function LoginScreen() {
             disabled={loading}
           >
             <Text style={[styles.toggleButtonText, { color: primaryColor }]}>
-              {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+              {isForgotPassword 
+                ? 'Back to Sign In' 
+                : isSignUp 
+                  ? 'Already have an account? Sign In' 
+                  : "Don't have an account? Sign Up"
+              }
             </Text>
           </TouchableOpacity>
         </View>
@@ -219,5 +295,21 @@ const styles = StyleSheet.create({
   toggleButtonText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  forgotPasswordButton: {
+    marginTop: 12,
+    padding: 8,
+    alignItems: 'center',
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  helperText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
