@@ -4,23 +4,23 @@ const AUTHORIZED_ADMIN_EMAIL = 'admin@marthomasf.org';
 
 async function requireAdmin(req, res, next) {
   try {
-    console.log('Admin auth check:', {
-      path: req.path,
-      hasIsAuthenticated: !!req.isAuthenticated,
-      isAuthenticated: req.isAuthenticated ? req.isAuthenticated() : false,
-      hasUser: !!req.user,
-      sessionID: req.sessionID,
-      hasSession: !!req.session
-    });
+    // Try to get user from passport first
+    let userId = req.user?.dbUser?.id;
     
-    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
-      console.log('Auth failed - not authenticated');
-      return res.status(401).json({ error: 'Not authenticated. Please log in.' });
+    // If passport doesn't have the user but we have a session with passport data,
+    // try to reload the user from the database
+    if (!userId && req.session?.passport?.user?.dbUserId) {
+      const dbUserId = req.session.passport.user.dbUserId;
+      const userResult = await db.query("SELECT * FROM users WHERE id = $1", [dbUserId]);
+      if (userResult.rows.length > 0) {
+        // Reconstruct req.user manually
+        req.user = { dbUser: userResult.rows[0] };
+        userId = req.user.dbUser.id;
+      }
     }
-
-    const userId = req.user.dbUser?.id;
+    
     if (!userId) {
-      return res.status(401).json({ error: 'Session invalid. Please log in again.' });
+      return res.status(401).json({ error: 'Not authenticated. Please log in.' });
     }
 
     const result = await db.query(
