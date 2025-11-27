@@ -899,8 +899,8 @@ router.post('/upload/church-directory', upload.single('file'), async (req, res) 
 
           await db.query(
             `INSERT INTO members 
-             (member_id, household_id, first_name, last_name, relationship, birth_date, wed_date, email, phone, gender)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+             (member_id, household_id, first_name, last_name, relationship, birth_date, wed_date, email, phone)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
             [
               memberId,
               householdUuid,
@@ -910,8 +910,7 @@ router.post('/upload/church-directory', upload.single('file'), async (req, res) 
               birthDate,
               marriageDate,
               email,
-              phone,
-              gender
+              phone
             ]
           );
           membersInserted++;
