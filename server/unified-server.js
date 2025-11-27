@@ -4,7 +4,7 @@ const path = require('path');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 require('dotenv').config();
 
-const { setupAuth, isAuthenticated, isApproved } = require('./replitAuth');
+const { setupAuth, isAuthenticated, isApproved } = require('./googleAuth');
 const authRoutes = require('./routes/auth');
 const configRoutes = require('./routes/config');
 const householdRoutes = require('./routes/households');
@@ -27,9 +27,8 @@ app.use(express.json());
 async function startServer() {
   try {
     await setupAuth(app);
-    console.log('✅ Replit Auth initialized');
   } catch (error) {
-    console.error('⚠️ Replit Auth initialization failed, continuing with legacy auth:', error.message);
+    console.error('⚠️ Google OAuth initialization failed:', error.message);
   }
 
   const adminPath = path.join(__dirname, '..', 'admin');
