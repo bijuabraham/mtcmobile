@@ -115,14 +115,17 @@ async function setupAuth(app) {
     clientID: clientID,
     clientSecret: clientSecret,
     callbackURL: "/api/auth/google/callback",
-    proxy: true
-  }, async (accessToken, refreshToken, profile, done) => {
+    proxy: true,
+    passReqToCallback: true
+  }, async (req, accessToken, refreshToken, profile, done) => {
     try {
       const dbUser = await upsertUser(profile);
+      const loginType = req.session?.loginType || 'user';
       return done(null, { 
         dbUser,
         accessToken,
-        refreshToken
+        refreshToken,
+        loginType
       });
     } catch (error) {
       console.error("Auth verification error:", error);
@@ -149,17 +152,41 @@ async function setupAuth(app) {
     }
   });
 
-  app.get("/api/auth/login", passport.authenticate("google", {
-    scope: ["profile", "email"],
-    prompt: "select_account"
-  }));
+  app.get("/api/auth/login", (req, res, next) => {
+    req.session.loginType = 'user';
+    req.session.save((err) => {
+      if (err) console.error("Session save error:", err);
+      passport.authenticate("google", {
+        scope: ["profile", "email"],
+        prompt: "select_account"
+      })(req, res, next);
+    });
+  });
 
   app.get("/api/auth/google/callback", 
     passport.authenticate("google", { 
-      failureRedirect: "/login?error=auth_failed" 
+      failureRedirect: "/login?error=auth_failed",
+      failWithError: true
     }),
-    (req, res) => {
-      res.redirect("/");
+    async (req, res) => {
+      const loginType = req.session?.loginType || 'user';
+      const email = req.user?.dbUser?.email?.toLowerCase();
+      
+      if (loginType === 'admin') {
+        if (email !== AUTHORIZED_ADMIN_EMAIL.toLowerCase()) {
+          req.logout(() => {
+            req.session.destroy(() => {
+              res.redirect("/admin/login.html?error=unauthorized");
+            });
+          });
+          return;
+        }
+        delete req.session.loginType;
+        res.redirect("/admin/index.html");
+      } else {
+        delete req.session.loginType;
+        res.redirect("/");
+      }
     }
   );
 
@@ -250,31 +277,16 @@ async function setupAuth(app) {
     });
   });
 
-  app.get("/api/admin/auth/login", passport.authenticate("google", {
-    scope: ["profile", "email"],
-    prompt: "select_account",
-    state: "admin_login"
-  }));
-
-  app.get("/api/admin/auth/callback", 
-    passport.authenticate("google", { 
-      failureRedirect: "/admin/login.html?error=auth_failed" 
-    }),
-    async (req, res) => {
-      const email = req.user?.dbUser?.email?.toLowerCase();
-      
-      if (email !== AUTHORIZED_ADMIN_EMAIL.toLowerCase()) {
-        req.logout(() => {
-          req.session.destroy(() => {
-            res.redirect("/admin/login.html?error=unauthorized");
-          });
-        });
-        return;
-      }
-      
-      res.redirect("/admin/index.html");
-    }
-  );
+  app.get("/api/admin/auth/login", (req, res, next) => {
+    req.session.loginType = 'admin';
+    req.session.save((err) => {
+      if (err) console.error("Session save error:", err);
+      passport.authenticate("google", {
+        scope: ["profile", "email"],
+        prompt: "select_account"
+      })(req, res, next);
+    });
+  });
 
   app.get("/api/admin/auth/check", async (req, res) => {
     if (!req.isAuthenticated() || !req.user) {
