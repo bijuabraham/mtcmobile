@@ -20,6 +20,11 @@ Preferred communication style: Simple, everyday language.
 - **Donor Number Read-Only for Users**: Users can view their Donor Number in Settings but cannot edit it; only admins can modify donor numbers
 - **Household Linking on Approval/Donor Update**: When admin approves a user or updates their donor number, the system automatically links them to their household by matching user's donor_number with household's donor_id
 - **Fund Activity Donation Upload**: Updated donation upload to accept Fund Activity Spreadsheet format from backend software (columns: Fund Name, Donor Number, Giving Date, Amount, Currency Type, Comment). System auto-detects format and extracts payment method and notes.
+- **3-Step Church Directory Import**: Replaced separate household/member upload with unified 3-step wizard:
+  - Step 1: Upload ExportFile.xls (Church Directory) - Creates households and extracts up to 8 members per row
+  - Step 2: Upload GroupsH.xls (Area Mapping) - Assigns prayer group areas to households
+  - Step 3: Upload Envelope.xls (Donor Mapping) - Adds donor numbers to households
+- **Skip Row Reporting**: All upload operations now show detailed reports of skipped rows including row number, reason, and relevant identifiers
 
 ## System Architecture
 

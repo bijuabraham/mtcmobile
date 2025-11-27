@@ -753,6 +753,407 @@ router.post('/upload/prayer-groups', upload.single('file'), async (req, res) => 
   }
 });
 
+// ===========================================
+// 3-STEP CHURCH DIRECTORY IMPORT ENDPOINTS
+// Step 1: Church Directory (ExportFile.xls) - households and members
+// Step 2: Area Mapping (GroupsH.xls) - prayer group assignments
+// Step 3: Donor Mapping (Envelope.xls) - donor numbers
+// ===========================================
+
+// Helper function to parse Excel date serial number
+function parseExcelDate(serial) {
+  if (!serial) return null;
+  if (typeof serial === 'string') {
+    // Already a date string like "07/29/1966"
+    const parts = serial.split('/');
+    if (parts.length === 3) {
+      const [month, day, year] = parts;
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+    return serial;
+  }
+  if (typeof serial === 'number') {
+    const excelEpoch = new Date(1899, 11, 30);
+    const jsDate = new Date(excelEpoch.getTime() + serial * 86400000);
+    return jsDate.toISOString().split('T')[0];
+  }
+  return null;
+}
+
+// Step 1: Upload Church Directory (ExportFile.xls)
+// Creates households and members from single-row format
+router.post('/upload/church-directory', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const rawData = xlsx.utils.sheet_to_json(worksheet);
+
+    if (rawData.length === 0) {
+      return res.status(400).json({ error: 'Excel file is empty' });
+    }
+
+    // Check for expected columns
+    const firstRow = rawData[0];
+    if (!('Household Record ID' in firstRow) || !('LastName' in firstRow)) {
+      return res.status(400).json({ 
+        error: 'Invalid format. Expected Church Directory export with columns: Household Record ID, LastName, FirstName, etc.' 
+      });
+    }
+
+    // Clear existing data before importing
+    await db.query('TRUNCATE TABLE members RESTART IDENTITY CASCADE');
+    await db.query('TRUNCATE TABLE households RESTART IDENTITY CASCADE');
+
+    let householdsInserted = 0;
+    let membersInserted = 0;
+    let skippedRows = [];
+
+    for (let rowIndex = 0; rowIndex < rawData.length; rowIndex++) {
+      const row = rawData[rowIndex];
+      const rowNum = rowIndex + 2; // +2 for header and 1-based index
+
+      try {
+        const householdRecordId = row['Household Record ID'];
+        if (!householdRecordId) {
+          skippedRows.push({ row: rowNum, reason: 'Missing Household Record ID' });
+          continue;
+        }
+
+        // Build household address
+        const addressParts = [
+          row['Address Line One'],
+          row['Address Line Two'],
+          row['City'],
+          row['State'],
+          row['Zip']
+        ].filter(Boolean);
+        const fullAddress = addressParts.length > 0 
+          ? `${row['Address Line One'] || ''}${row['Address Line Two'] ? ', ' + row['Address Line Two'] : ''}, ${row['City'] || ''}, ${row['State'] || ''} ${row['Zip'] || ''}`.replace(/^, |, $/g, '')
+          : null;
+
+        // Create family name from LastName and FirstName
+        const familyName = row['MailTo'] || `${row['FirstName'] || ''} ${row['LastName'] || ''}`.trim();
+
+        // Insert household
+        await db.query(
+          `INSERT INTO households (household_id, family_name, address, phone, email, prayer_group, donor_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT (household_id) DO UPDATE SET
+             family_name = EXCLUDED.family_name,
+             address = EXCLUDED.address,
+             phone = EXCLUDED.phone,
+             updated_at = NOW()`,
+          [
+            String(householdRecordId),
+            familyName,
+            fullAddress,
+            row['HousePhone'] || null,
+            null, // Email will be populated from members
+            null, // Prayer group will be set in step 2
+            null  // Donor ID will be set in step 3
+          ]
+        );
+        householdsInserted++;
+
+        // Get the household UUID for member linking
+        const householdResult = await db.query(
+          'SELECT id FROM households WHERE household_id = $1',
+          [String(householdRecordId)]
+        );
+        const householdUuid = householdResult.rows[0]?.id;
+
+        // Extract members (up to 8 per row)
+        for (let memberNum = 1; memberNum <= 8; memberNum++) {
+          const memberName = row[`Member${memberNum}`];
+          if (!memberName || memberName.toString().trim() === '') continue;
+
+          const relationship = row[`Relationship${memberNum}`] || null;
+          const gender = row[`Gender${memberNum}`] || null;
+          const birthDateRaw = row[`BirthDate${memberNum}`];
+          const birthDate = parseExcelDate(birthDateRaw);
+          const marriageDateRaw = row[`Marriage${memberNum}`];
+          const marriageDate = parseExcelDate(marriageDateRaw);
+          const personalEmail = row[`Personal Email${memberNum}`] || null;
+          const workEmail = row[`Work Email${memberNum}`] || null;
+          const mobile = row[`Mobile${memberNum}`] || null;
+          const home = row[`Home${memberNum}`] || null;
+          const occupation = row[`Occupation${memberNum}`] || null;
+
+          // Use personal email, fall back to work email
+          const email = personalEmail || workEmail;
+          // Use mobile, fall back to home phone
+          const phone = mobile || home;
+
+          // Generate a unique member ID
+          const memberId = `${householdRecordId}-${memberNum}`;
+
+          // Parse first and last name from member name
+          // Member names are typically just first names (like "Bijou", "Taji")
+          const memberNameStr = String(memberName).trim();
+          const lastName = row['LastName'] || '';
+
+          await db.query(
+            `INSERT INTO members 
+             (member_id, household_id, first_name, last_name, relationship, birth_date, wed_date, email, phone, gender)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+            [
+              memberId,
+              householdUuid,
+              memberNameStr,
+              lastName,
+              relationship,
+              birthDate,
+              marriageDate,
+              email,
+              phone,
+              gender
+            ]
+          );
+          membersInserted++;
+        }
+
+      } catch (rowError) {
+        console.error(`Error processing row ${rowNum}:`, rowError.message);
+        skippedRows.push({ row: rowNum, reason: rowError.message, householdId: row['Household Record ID'] });
+      }
+    }
+
+    // Filter out empty row errors for cleaner reporting
+    const significantSkipped = skippedRows.filter(s => s.reason !== 'Empty row');
+    const skippedDetails = significantSkipped.slice(0, 50);
+    const hasMoreSkipped = significantSkipped.length > 50;
+
+    res.json({
+      success: true,
+      step: 1,
+      householdsInserted,
+      membersInserted,
+      skipped: skippedRows.length,
+      total: rawData.length,
+      skippedDetails,
+      hasMoreSkipped,
+      message: `Step 1 complete: Created ${householdsInserted} households with ${membersInserted} members. Please proceed to upload Area Mapping file.`
+    });
+  } catch (error) {
+    console.error('Upload church directory error:', error);
+    res.status(500).json({ error: error.message || 'Failed to upload church directory data' });
+  }
+});
+
+// Step 2: Upload Area Mapping (GroupsH.xls)
+// Updates households with prayer group/area assignments
+router.post('/upload/area-mapping', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const rawData = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+
+    if (rawData.length === 0) {
+      return res.status(400).json({ error: 'Excel file is empty' });
+    }
+
+    // Based on GroupsH.xls structure:
+    // Column 7 (index 7) = Area name (e.g., "Central Valley", "Tri-Valley")
+    // Need to find household identifier - looking at the data, column 44 has "Aakash & Sidhima" and column 47 has "Jacob"
+    // Actually, looking closer at the structure:
+    // - Column with "Household First Name" and "Household Last Name" to match households
+    // - Or use the household record ID if present
+
+    // The GroupsH format has member-level data with household info
+    // Let's find the area and household columns dynamically
+
+    const headers = rawData[0] || [];
+    
+    // Find relevant column indices by examining the data structure
+    // Based on sample: Area is around column 7, Household name info around columns 44-47
+    let areaIndex = -1;
+    let householdFirstNameIndex = -1;
+    let householdLastNameIndex = -1;
+    let householdRecordIdIndex = -1;
+
+    // Search for column headers or patterns
+    for (let i = 0; i < headers.length; i++) {
+      const header = String(headers[i] || '').toLowerCase();
+      if (header.includes('household first name')) householdFirstNameIndex = i;
+      if (header.includes('household last name')) householdLastNameIndex = i;
+      if (header.includes('household record id')) householdRecordIdIndex = i;
+    }
+
+    // GroupsH doesn't have clear headers, so use fixed positions based on the export format
+    // From the sample data analysis:
+    // Index 7 = Area name (e.g., "Central Valley")
+    // Index 44 = Household First Name (e.g., "Aakash & Sidhima") 
+    // Index 45 = Household Last Name (e.g., "Jacob")
+    areaIndex = 7;
+    householdFirstNameIndex = 44;
+    householdLastNameIndex = 45;
+
+    // Build a map of household family names to household IDs from the database
+    const householdsResult = await db.query('SELECT household_id, family_name FROM households');
+    const householdsByName = {};
+    for (const h of householdsResult.rows) {
+      const normalizedName = h.family_name.toLowerCase().replace(/\s+/g, ' ').trim();
+      householdsByName[normalizedName] = h.household_id;
+    }
+
+    let updated = 0;
+    let notFound = 0;
+    let skippedRows = [];
+    const processedHouseholds = new Set();
+
+    // Skip header row (index 0)
+    for (let rowIndex = 1; rowIndex < rawData.length; rowIndex++) {
+      const row = rawData[rowIndex];
+      const rowNum = rowIndex + 1;
+
+      if (!row || row.every(cell => !cell)) continue;
+
+      const area = row[areaIndex] ? String(row[areaIndex]).trim() : null;
+      const householdFirstName = row[householdFirstNameIndex] ? String(row[householdFirstNameIndex]).trim() : null;
+      const householdLastName = row[householdLastNameIndex] ? String(row[householdLastNameIndex]).trim() : null;
+
+      if (!area || !householdFirstName || !householdLastName) {
+        continue; // Skip rows without required data
+      }
+
+      // Build family name in same format as stored (e.g., "Aakash & Sidhima Jacob")
+      const familyName = `${householdFirstName} ${householdLastName}`;
+      const normalizedFamilyName = familyName.toLowerCase().replace(/\s+/g, ' ').trim();
+
+      // Skip if we already processed this household
+      if (processedHouseholds.has(normalizedFamilyName)) continue;
+      processedHouseholds.add(normalizedFamilyName);
+
+      const householdId = householdsByName[normalizedFamilyName];
+
+      if (householdId) {
+        try {
+          await db.query(
+            `UPDATE households SET prayer_group = $1, updated_at = NOW() WHERE household_id = $2`,
+            [area, householdId]
+          );
+          updated++;
+        } catch (err) {
+          skippedRows.push({ row: rowNum, reason: err.message, familyName });
+        }
+      } else {
+        notFound++;
+        if (notFound <= 20) { // Only track first 20 not found for debugging
+          skippedRows.push({ row: rowNum, reason: 'Household not found', familyName });
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      step: 2,
+      updated,
+      notFound,
+      total: processedHouseholds.size,
+      skippedDetails: skippedRows.slice(0, 50),
+      hasMoreSkipped: skippedRows.length > 50,
+      message: `Step 2 complete: Updated ${updated} households with area/prayer group. ${notFound} households not found. Please proceed to upload Donor Mapping file.`
+    });
+  } catch (error) {
+    console.error('Upload area mapping error:', error);
+    res.status(500).json({ error: error.message || 'Failed to upload area mapping data' });
+  }
+});
+
+// Step 3: Upload Donor Mapping (Envelope.xls)
+// Updates households with donor numbers
+router.post('/upload/donor-mapping', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const rawData = xlsx.utils.sheet_to_json(worksheet);
+
+    if (rawData.length === 0) {
+      return res.status(400).json({ error: 'Excel file is empty' });
+    }
+
+    // Check for expected columns from Envelope.xls
+    const firstRow = rawData[0];
+    if (!('Household Record ID' in firstRow) || !('Donor Number' in firstRow)) {
+      return res.status(400).json({ 
+        error: 'Invalid format. Expected Envelope export with columns: Household Record ID, Donor Number' 
+      });
+    }
+
+    let updated = 0;
+    let notFound = 0;
+    let skippedRows = [];
+    const processedHouseholds = new Set();
+
+    for (let rowIndex = 0; rowIndex < rawData.length; rowIndex++) {
+      const row = rawData[rowIndex];
+      const rowNum = rowIndex + 2;
+
+      const householdRecordId = row['Household Record ID'];
+      const donorNumber = row['Donor Number'];
+
+      if (!householdRecordId || !donorNumber) {
+        skippedRows.push({ 
+          row: rowNum, 
+          reason: !householdRecordId ? 'Missing Household Record ID' : 'Missing Donor Number',
+          householdId: householdRecordId
+        });
+        continue;
+      }
+
+      // Skip if already processed this household
+      const householdIdStr = String(householdRecordId);
+      if (processedHouseholds.has(householdIdStr)) continue;
+      processedHouseholds.add(householdIdStr);
+
+      try {
+        const result = await db.query(
+          `UPDATE households SET donor_id = $1, updated_at = NOW() WHERE household_id = $2 RETURNING id`,
+          [String(donorNumber), householdIdStr]
+        );
+
+        if (result.rows.length > 0) {
+          updated++;
+        } else {
+          notFound++;
+          skippedRows.push({ row: rowNum, reason: 'Household not found in database', householdId: householdIdStr });
+        }
+      } catch (err) {
+        skippedRows.push({ row: rowNum, reason: err.message, householdId: householdIdStr });
+      }
+    }
+
+    res.json({
+      success: true,
+      step: 3,
+      updated,
+      notFound,
+      total: processedHouseholds.size,
+      skippedDetails: skippedRows.slice(0, 50),
+      hasMoreSkipped: skippedRows.length > 50,
+      message: `Step 3 complete: Updated ${updated} households with donor numbers. ${notFound} households not found. Import process complete!`
+    });
+  } catch (error) {
+    console.error('Upload donor mapping error:', error);
+    res.status(500).json({ error: error.message || 'Failed to upload donor mapping data' });
+  }
+});
+
 router.get('/users', async (req, res) => {
   try {
     const result = await db.query(

@@ -349,90 +349,275 @@ function uploadWithProgress(url, file, progressContainerId, progressFillId, prog
   });
 }
 
-// Upload members
-document.getElementById('membersUploadForm').addEventListener('submit', async (e) => {
+// ================================================
+// 3-Step Church Directory Import Wizard
+// ================================================
+
+// Helper to format skipped rows table for directory import
+function formatSkippedRowsTable(skippedDetails, hasMoreSkipped) {
+  if (!skippedDetails || skippedDetails.length === 0) return '';
+  
+  const nonEmptySkipped = skippedDetails.filter(s => s.reason !== 'Empty row');
+  if (nonEmptySkipped.length === 0) return '';
+  
+  return `
+    <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 6px; border: 1px solid #ffc107;">
+      <strong style="color: #856404;">Skipped Rows Details:</strong>
+      <table style="width: 100%; margin-top: 8px; font-size: 13px; border-collapse: collapse;">
+        <thead>
+          <tr style="background: #ffeeba;">
+            <th style="padding: 6px; text-align: left; border-bottom: 1px solid #ffc107;">Row</th>
+            <th style="padding: 6px; text-align: left; border-bottom: 1px solid #ffc107;">Reason</th>
+            <th style="padding: 6px; text-align: left; border-bottom: 1px solid #ffc107;">Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${nonEmptySkipped.map(s => `
+            <tr>
+              <td style="padding: 5px; border-bottom: 1px solid #ffe69c;">${s.row}</td>
+              <td style="padding: 5px; border-bottom: 1px solid #ffe69c;">${s.reason}</td>
+              <td style="padding: 5px; border-bottom: 1px solid #ffe69c;">${s.householdId || s.familyName || s.donorNumber || '-'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      ${hasMoreSkipped ? '<p style="margin-top: 8px; font-size: 12px; color: #856404;">... and more rows were skipped (showing first 50)</p>' : ''}
+    </div>
+  `;
+}
+
+// Update step indicators
+function updateStepIndicator(completedStep) {
+  for (let i = 1; i <= 3; i++) {
+    const indicator = document.getElementById(`step${i}Indicator`);
+    const circle = indicator.querySelector('div');
+    
+    if (i < completedStep) {
+      // Completed step
+      indicator.style.opacity = '1';
+      circle.style.background = '#28a745';
+      circle.innerHTML = '&#10003;'; // Checkmark
+    } else if (i === completedStep) {
+      // Current step
+      indicator.style.opacity = '1';
+      circle.style.background = '#C41E3A';
+      circle.textContent = i;
+    } else {
+      // Future step
+      indicator.style.opacity = '0.5';
+      circle.style.background = '#ccc';
+      circle.textContent = i;
+    }
+  }
+}
+
+// Enable step section
+function enableStep(stepNum) {
+  const section = document.getElementById(`step${stepNum}Section`);
+  section.style.opacity = '1';
+  section.style.borderColor = '#C41E3A';
+  section.querySelector('h3').style.color = '#C41E3A';
+  
+  const fileInput = section.querySelector('input[type="file"]');
+  const submitBtn = section.querySelector('button[type="submit"]');
+  if (fileInput) fileInput.disabled = false;
+  if (submitBtn) submitBtn.disabled = false;
+}
+
+// Complete step section
+function completeStep(stepNum) {
+  const section = document.getElementById(`step${stepNum}Section`);
+  section.style.borderColor = '#28a745';
+  section.querySelector('h3').style.color = '#28a745';
+}
+
+// Reset import wizard
+function resetImportWizard() {
+  // Reset step indicators
+  updateStepIndicator(1);
+  
+  // Reset step sections
+  for (let i = 1; i <= 3; i++) {
+    const section = document.getElementById(`step${i}Section`);
+    if (i === 1) {
+      section.style.opacity = '1';
+      section.style.borderColor = '#C41E3A';
+      section.querySelector('h3').style.color = '#C41E3A';
+      section.querySelector('input[type="file"]').disabled = false;
+      section.querySelector('button[type="submit"]').disabled = false;
+    } else {
+      section.style.opacity = '0.5';
+      section.style.borderColor = '#ccc';
+      section.querySelector('h3').style.color = '#666';
+      section.querySelector('input[type="file"]').disabled = true;
+      section.querySelector('button[type="submit"]').disabled = true;
+    }
+    // Clear result boxes
+    const resultBox = section.querySelector('.result-box');
+    if (resultBox) {
+      resultBox.className = 'result-box';
+      resultBox.innerHTML = '';
+    }
+    // Clear file inputs
+    const fileInput = section.querySelector('input[type="file"]');
+    if (fileInput) fileInput.value = '';
+  }
+  
+  // Hide complete section
+  document.getElementById('importCompleteSection').style.display = 'none';
+}
+
+// Step 1: Upload Church Directory
+document.getElementById('churchDirectoryUploadForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   
-  const fileInput = document.getElementById('membersFile');
+  const fileInput = document.getElementById('churchDirectoryFile');
   const file = fileInput.files[0];
   
   if (!file) {
-    showNotification('Please select a file', 'error');
+    showNotification('Please select the ExportFile.xls', 'error');
     return;
   }
   
   try {
     const result = await uploadWithProgress(
-      `${API_BASE}/admin/upload/members`,
+      `${API_BASE}/admin/upload/church-directory`,
       file,
-      'membersProgress',
-      'membersProgressFill',
-      'membersProgressText',
-      'membersUploadBtn'
+      'churchDirectoryProgress',
+      'churchDirectoryProgressFill',
+      'churchDirectoryProgressText',
+      'churchDirectoryUploadBtn'
     );
     
-    const resultBox = document.getElementById('membersResult');
+    const resultBox = document.getElementById('churchDirectoryResult');
     resultBox.className = 'result-box success';
     resultBox.innerHTML = `
-      <strong>Upload Successful!</strong><br>
-      Format: ${result.format || 'Standard'}<br>
-      ${result.inserted} members inserted<br>
-      ${result.errors ? result.errors + ' errors<br>' : ''}
+      <strong>Step 1 Complete!</strong><br>
+      ${result.householdsInserted} households created<br>
+      ${result.membersInserted} members imported<br>
+      ${result.skipped} rows skipped<br>
       Total processed: ${result.total}
+      ${formatSkippedRowsTable(result.skippedDetails, result.hasMoreSkipped)}
     `;
     
-    showNotification('Members uploaded successfully!');
+    showNotification('Church directory uploaded! Proceed to Step 2.');
+    
+    // Mark Step 1 as complete and enable Step 2
+    completeStep(1);
+    updateStepIndicator(2);
+    enableStep(2);
+    
     fileInput.value = '';
   } catch (error) {
-    console.error('Error uploading members:', error);
-    const resultBox = document.getElementById('membersResult');
+    console.error('Error uploading church directory:', error);
+    const resultBox = document.getElementById('churchDirectoryResult');
     resultBox.className = 'result-box error';
     resultBox.textContent = error.message;
     showNotification(error.message, 'error');
   }
 });
 
-// Upload households
-document.getElementById('householdsUploadForm').addEventListener('submit', async (e) => {
+// Step 2: Upload Area Mapping
+document.getElementById('areaMappingUploadForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   
-  const fileInput = document.getElementById('householdsFile');
+  const fileInput = document.getElementById('areaMappingFile');
   const file = fileInput.files[0];
   
   if (!file) {
-    showNotification('Please select a file', 'error');
+    showNotification('Please select the GroupsH.xls file', 'error');
     return;
   }
   
   try {
     const result = await uploadWithProgress(
-      `${API_BASE}/admin/upload/households`,
+      `${API_BASE}/admin/upload/area-mapping`,
       file,
-      'householdsProgress',
-      'householdsProgressFill',
-      'householdsProgressText',
-      'householdsUploadBtn'
+      'areaMappingProgress',
+      'areaMappingProgressFill',
+      'areaMappingProgressText',
+      'areaMappingUploadBtn'
     );
     
-    const resultBox = document.getElementById('householdsResult');
+    const resultBox = document.getElementById('areaMappingResult');
     resultBox.className = 'result-box success';
     resultBox.innerHTML = `
-      <strong>Upload Successful!</strong><br>
-      Format: ${result.format || 'Standard'}<br>
-      ${result.inserted} households inserted<br>
-      Total processed: ${result.total}
+      <strong>Step 2 Complete!</strong><br>
+      ${result.updated} households updated with area/prayer group<br>
+      ${result.notFound} households not found<br>
+      Total unique households: ${result.total}
+      ${formatSkippedRowsTable(result.skippedDetails, result.hasMoreSkipped)}
     `;
     
-    showNotification('Households uploaded successfully!');
+    showNotification('Area mapping uploaded! Proceed to Step 3.');
+    
+    // Mark Step 2 as complete and enable Step 3
+    completeStep(2);
+    updateStepIndicator(3);
+    enableStep(3);
+    
     fileInput.value = '';
   } catch (error) {
-    console.error('Error uploading households:', error);
-    const resultBox = document.getElementById('householdsResult');
+    console.error('Error uploading area mapping:', error);
+    const resultBox = document.getElementById('areaMappingResult');
     resultBox.className = 'result-box error';
     resultBox.textContent = error.message;
     showNotification(error.message, 'error');
   }
 });
+
+// Step 3: Upload Donor Mapping
+document.getElementById('donorMappingUploadForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const fileInput = document.getElementById('donorMappingFile');
+  const file = fileInput.files[0];
+  
+  if (!file) {
+    showNotification('Please select the Envelope.xls file', 'error');
+    return;
+  }
+  
+  try {
+    const result = await uploadWithProgress(
+      `${API_BASE}/admin/upload/donor-mapping`,
+      file,
+      'donorMappingProgress',
+      'donorMappingProgressFill',
+      'donorMappingProgressText',
+      'donorMappingUploadBtn'
+    );
+    
+    const resultBox = document.getElementById('donorMappingResult');
+    resultBox.className = 'result-box success';
+    resultBox.innerHTML = `
+      <strong>Step 3 Complete!</strong><br>
+      ${result.updated} households updated with donor numbers<br>
+      ${result.notFound} households not found<br>
+      Total unique households: ${result.total}
+      ${formatSkippedRowsTable(result.skippedDetails, result.hasMoreSkipped)}
+    `;
+    
+    showNotification('Import complete! All data has been imported.');
+    
+    // Mark Step 3 as complete
+    completeStep(3);
+    
+    // Show complete section
+    document.getElementById('importCompleteSection').style.display = 'block';
+    
+    fileInput.value = '';
+  } catch (error) {
+    console.error('Error uploading donor mapping:', error);
+    const resultBox = document.getElementById('donorMappingResult');
+    resultBox.className = 'result-box error';
+    resultBox.textContent = error.message;
+    showNotification(error.message, 'error');
+  }
+});
+
+// Reset import button
+document.getElementById('resetImportBtn').addEventListener('click', resetImportWizard);
 
 // Live preview updates
 ['churchName', 'primaryColor', 'secondaryColor', 'logoUrl'].forEach(id => {

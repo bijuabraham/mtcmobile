@@ -18,10 +18,8 @@
       <button class="tab-btn" data-tab="contact">Contact Us</button>
       <button class="tab-btn" data-tab="approvals">User Approvals</button>
       <button class="tab-btn" data-tab="announcements">Announcements</button>
-      <button class="tab-btn" data-tab="members">Members Upload</button>
-      <button class="tab-btn" data-tab="households">Households Upload</button>
+      <button class="tab-btn" data-tab="directory-import">Directory Import</button>
       <button class="tab-btn" data-tab="donations">Donations Upload</button>
-      <button class="tab-btn" data-tab="prayer-groups">Prayer Groups Upload</button>
       <button class="tab-btn" data-tab="admins">Admin Management</button>
     </div>
 
@@ -391,90 +389,105 @@
       <div id="announcementsResult" class="result-box"></div>
     </div>
 
-    <!-- Members Upload Tab -->
-    <div id="members-tab" class="tab-content">
-      <h2>Upload Members Data</h2>
+    <!-- Church Directory Import Tab (3-Step Wizard) -->
+    <div id="directory-import-tab" class="tab-content">
+      <h2>Church Directory Import</h2>
       <div class="upload-section">
-        <div class="info-box">
-          <h3>Excel Format Requirements</h3>
-          <p>Your Excel file should have the following columns:</p>
-          <ul>
-            <li><strong>household_id</strong> - Unique household identifier</li>
-            <li><strong>member_id</strong> - Unique member identifier</li>
-            <li><strong>firstname</strong> - First name</li>
-            <li><strong>lastname</strong> - Last name</li>
-            <li><strong>relationship</strong> - Relationship (e.g., Head, Spouse, Child)</li>
-            <li><strong>birth_date</strong> - Date of birth (YYYY-MM-DD)</li>
-            <li><strong>wed_date</strong> - Wedding date (YYYY-MM-DD, optional)</li>
-            <li><strong>email</strong> - Email address (optional)</li>
-            <li><strong>phone</strong> - Phone number (optional)</li>
-          </ul>
+        <div class="info-box" style="margin-bottom: 20px;">
+          <h3>3-Step Import Process</h3>
+          <p>Import your church directory data from your backend software export files. This is a 3-step process:</p>
+          <ol style="margin-top: 10px; padding-left: 20px;">
+            <li><strong>Step 1:</strong> Upload Church Directory (ExportFile.xls) - Creates households and members</li>
+            <li><strong>Step 2:</strong> Upload Area Mapping (GroupsH.xls) - Assigns prayer group areas</li>
+            <li><strong>Step 3:</strong> Upload Donor Mapping (Envelope.xls) - Adds donor numbers</li>
+          </ol>
+          <p style="margin-top: 10px; color: #856404; background: #fff3cd; padding: 10px; border-radius: 5px;">
+            <strong>Note:</strong> Step 1 will replace all existing household and member data. Complete all three steps for full data import.
+          </p>
         </div>
 
-        <p style="margin-bottom: 15px; padding: 10px; background: #f0f0f0; border-radius: 5px;">
-          📥 <a href="/templates/members_template.csv" download style="color: #C41E3A; text-decoration: none; font-weight: 500;">Download Members Template (CSV)</a>
-        </p>
-
-        <form id="membersUploadForm">
-          <div class="form-group">
-            <label for="membersFile">Select Excel File (.xlsx)</label>
-            <input type="file" id="membersFile" name="file" accept=".xlsx,.xls,.csv" required>
+        <!-- Step Progress Indicator -->
+        <div id="importStepIndicator" style="display: flex; justify-content: space-between; margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+          <div class="step-indicator" id="step1Indicator" style="text-align: center; flex: 1;">
+            <div style="width: 40px; height: 40px; border-radius: 50%; background: #C41E3A; color: white; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-weight: bold;">1</div>
+            <div style="font-size: 12px; color: #333;">Church Directory</div>
           </div>
-          <button type="submit" class="btn-primary" id="membersUploadBtn">Upload Members</button>
-        </form>
-
-        <div id="membersProgress" class="progress-container" style="display:none;">
-          <div class="progress-bar">
-            <div class="progress-fill" id="membersProgressFill"></div>
+          <div class="step-indicator" id="step2Indicator" style="text-align: center; flex: 1; opacity: 0.5;">
+            <div style="width: 40px; height: 40px; border-radius: 50%; background: #ccc; color: white; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-weight: bold;">2</div>
+            <div style="font-size: 12px; color: #666;">Area Mapping</div>
           </div>
-          <div class="progress-text" id="membersProgressText">Uploading... 0%</div>
+          <div class="step-indicator" id="step3Indicator" style="text-align: center; flex: 1; opacity: 0.5;">
+            <div style="width: 40px; height: 40px; border-radius: 50%; background: #ccc; color: white; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-weight: bold;">3</div>
+            <div style="font-size: 12px; color: #666;">Donor Mapping</div>
+          </div>
         </div>
 
-        <div id="membersResult" class="result-box"></div>
-      </div>
-    </div>
-
-    <!-- Households Upload Tab -->
-    <div id="households-tab" class="tab-content">
-      <h2>Upload Households Data</h2>
-      <div class="upload-section">
-        <div class="info-box">
-          <h3>Excel Format Requirements</h3>
-          <p>Your Excel file should have the following columns:</p>
-          <ul>
-            <li><strong>household_id</strong> - Unique household identifier</li>
-            <li><strong>mail_to</strong> - Household name (e.g., "The Smith Family")</li>
-            <li><strong>address</strong> - Street address (optional)</li>
-            <li><strong>city</strong> - City (optional)</li>
-            <li><strong>state</strong> - State (optional)</li>
-            <li><strong>zip</strong> - ZIP code (optional)</li>
-            <li><strong>phone</strong> - Phone number (optional)</li>
-            <li><strong>email</strong> - Email address (optional)</li>
-            <li><strong>prayer_group</strong> - Prayer group name (optional)</li>
-            <li><strong>donor_number</strong> - Donor ID/number (optional)</li>
-          </ul>
+        <!-- Step 1: Church Directory Upload -->
+        <div id="step1Section" class="step-section" style="border: 2px solid #C41E3A; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="color: #C41E3A; margin-bottom: 15px;">Step 1: Upload Church Directory</h3>
+          <p style="margin-bottom: 15px; color: #555;">Upload the <strong>ExportFile.xls</strong> from your backend software. This file contains household and member information.</p>
+          <form id="churchDirectoryUploadForm">
+            <div class="form-group">
+              <label for="churchDirectoryFile">Select ExportFile.xls</label>
+              <input type="file" id="churchDirectoryFile" name="file" accept=".xlsx,.xls" required>
+            </div>
+            <button type="submit" class="btn-primary" id="churchDirectoryUploadBtn">Upload Church Directory</button>
+          </form>
+          <div id="churchDirectoryProgress" class="progress-container" style="display:none;">
+            <div class="progress-bar">
+              <div class="progress-fill" id="churchDirectoryProgressFill"></div>
+            </div>
+            <div class="progress-text" id="churchDirectoryProgressText">Uploading... 0%</div>
+          </div>
+          <div id="churchDirectoryResult" class="result-box"></div>
         </div>
 
-        <p style="margin-bottom: 15px; padding: 10px; background: #f0f0f0; border-radius: 5px;">
-          📥 <a href="/templates/households_template.csv" download style="color: #C41E3A; text-decoration: none; font-weight: 500;">Download Households Template (CSV)</a>
-        </p>
-
-        <form id="householdsUploadForm">
-          <div class="form-group">
-            <label for="householdsFile">Select Excel File (.xlsx)</label>
-            <input type="file" id="householdsFile" name="file" accept=".xlsx,.xls,.csv" required>
+        <!-- Step 2: Area Mapping Upload -->
+        <div id="step2Section" class="step-section" style="border: 2px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 20px; opacity: 0.5;">
+          <h3 style="color: #666; margin-bottom: 15px;">Step 2: Upload Area Mapping</h3>
+          <p style="margin-bottom: 15px; color: #555;">Upload the <strong>GroupsH.xls</strong> file to assign prayer group areas to households.</p>
+          <form id="areaMappingUploadForm">
+            <div class="form-group">
+              <label for="areaMappingFile">Select GroupsH.xls</label>
+              <input type="file" id="areaMappingFile" name="file" accept=".xlsx,.xls" disabled>
+            </div>
+            <button type="submit" class="btn-primary" id="areaMappingUploadBtn" disabled>Upload Area Mapping</button>
+          </form>
+          <div id="areaMappingProgress" class="progress-container" style="display:none;">
+            <div class="progress-bar">
+              <div class="progress-fill" id="areaMappingProgressFill"></div>
+            </div>
+            <div class="progress-text" id="areaMappingProgressText">Uploading... 0%</div>
           </div>
-          <button type="submit" class="btn-primary" id="householdsUploadBtn">Upload Households</button>
-        </form>
-
-        <div id="householdsProgress" class="progress-container" style="display:none;">
-          <div class="progress-bar">
-            <div class="progress-fill" id="householdsProgressFill"></div>
-          </div>
-          <div class="progress-text" id="householdsProgressText">Uploading... 0%</div>
+          <div id="areaMappingResult" class="result-box"></div>
         </div>
 
-        <div id="householdsResult" class="result-box"></div>
+        <!-- Step 3: Donor Mapping Upload -->
+        <div id="step3Section" class="step-section" style="border: 2px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 20px; opacity: 0.5;">
+          <h3 style="color: #666; margin-bottom: 15px;">Step 3: Upload Donor Mapping</h3>
+          <p style="margin-bottom: 15px; color: #555;">Upload the <strong>Envelope.xls</strong> file to add donor numbers to households.</p>
+          <form id="donorMappingUploadForm">
+            <div class="form-group">
+              <label for="donorMappingFile">Select Envelope.xls</label>
+              <input type="file" id="donorMappingFile" name="file" accept=".xlsx,.xls" disabled>
+            </div>
+            <button type="submit" class="btn-primary" id="donorMappingUploadBtn" disabled>Upload Donor Mapping</button>
+          </form>
+          <div id="donorMappingProgress" class="progress-container" style="display:none;">
+            <div class="progress-bar">
+              <div class="progress-fill" id="donorMappingProgressFill"></div>
+            </div>
+            <div class="progress-text" id="donorMappingProgressText">Uploading... 0%</div>
+          </div>
+          <div id="donorMappingResult" class="result-box"></div>
+        </div>
+
+        <!-- Overall Import Status -->
+        <div id="importCompleteSection" style="display: none; padding: 20px; background: #d4edda; border: 1px solid #28a745; border-radius: 8px;">
+          <h3 style="color: #155724; margin-bottom: 10px;">Import Complete!</h3>
+          <p style="color: #155724;">All three steps have been completed successfully. Your church directory data has been fully imported.</p>
+          <button type="button" id="resetImportBtn" class="btn-secondary" style="margin-top: 15px;">Start New Import</button>
+        </div>
       </div>
     </div>
 
@@ -525,42 +538,6 @@
         </div>
 
         <div id="donationsResult" class="result-box"></div>
-      </div>
-    </div>
-
-    <!-- Prayer Groups Upload Tab -->
-    <div id="prayer-groups-tab" class="tab-content">
-      <h2>Upload Prayer Groups Data</h2>
-      <div class="upload-section">
-        <div class="info-box">
-          <h3>Excel Format Requirements</h3>
-          <p>Your Excel file should have the following columns:</p>
-          <ul>
-            <li><strong>Household Record ID</strong> - Unique household identifier (must match existing household_id)</li>
-            <li><strong>Member Record ID</strong> - Member identifier (optional, not used in update)</li>
-            <li><strong>grpName</strong> - Prayer group name to assign to the household</li>
-          </ul>
-          <p style="margin-top: 10px; color: #666;">
-            <strong>Note:</strong> This upload will UPDATE existing households with prayer group assignments. It will not replace or delete household data.
-          </p>
-        </div>
-
-        <form id="prayerGroupsUploadForm">
-          <div class="form-group">
-            <label for="prayerGroupsFile">Select Excel File (.xlsx)</label>
-            <input type="file" id="prayerGroupsFile" name="file" accept=".xlsx,.xls,.csv" required>
-          </div>
-          <button type="submit" class="btn-primary" id="prayerGroupsUploadBtn">Upload Prayer Groups</button>
-        </form>
-
-        <div id="prayerGroupsProgress" class="progress-container" style="display:none;">
-          <div class="progress-bar">
-            <div class="progress-fill" id="prayerGroupsProgressFill"></div>
-          </div>
-          <div class="progress-text" id="prayerGroupsProgressText">Uploading... 0%</div>
-        </div>
-
-        <div id="prayerGroupsResult" class="result-box"></div>
       </div>
     </div>
 
