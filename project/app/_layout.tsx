@@ -21,12 +21,20 @@ function RootLayoutNav() {
         router.replace('/login');
       }
     } else {
-      if (isSuspended && currentSegment !== 'account-suspended') {
-        router.replace('/account-suspended');
-      } else if (needsProfileCompletion && currentSegment !== 'complete-profile') {
-        router.replace('/complete-profile');
-      } else if (isPendingApproval && currentSegment !== 'pending-approval') {
-        router.replace('/pending-approval');
+      // Priority order: suspended > profile completion > pending approval > approved
+      // Suspended users always go to account-suspended, regardless of other states
+      if (isSuspended) {
+        if (currentSegment !== 'account-suspended') {
+          router.replace('/account-suspended');
+        }
+      } else if (needsProfileCompletion) {
+        if (currentSegment !== 'complete-profile') {
+          router.replace('/complete-profile');
+        }
+      } else if (isPendingApproval) {
+        if (currentSegment !== 'pending-approval') {
+          router.replace('/pending-approval');
+        }
       } else if (isApproved && !inAuthGroup) {
         router.replace('/(tabs)');
       }
