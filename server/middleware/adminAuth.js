@@ -4,7 +4,17 @@ const AUTHORIZED_ADMIN_EMAIL = 'admin@marthomasf.org';
 
 async function requireAdmin(req, res, next) {
   try {
+    console.log('Admin auth check:', {
+      path: req.path,
+      hasIsAuthenticated: !!req.isAuthenticated,
+      isAuthenticated: req.isAuthenticated ? req.isAuthenticated() : false,
+      hasUser: !!req.user,
+      sessionID: req.sessionID,
+      hasSession: !!req.session
+    });
+    
     if (!req.isAuthenticated || !req.isAuthenticated() || !req.user) {
+      console.log('Auth failed - not authenticated');
       return res.status(401).json({ error: 'Not authenticated. Please log in.' });
     }
 
