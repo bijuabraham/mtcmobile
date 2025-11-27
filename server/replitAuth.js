@@ -50,12 +50,16 @@ function updateUserSession(user, tokens) {
   user.expires_at = user.claims?.exp;
 }
 
+const AUTHORIZED_ADMIN_EMAIL = 'admin@marthomasf.org';
+
 async function upsertUser(claims) {
   const googleId = claims["sub"];
   const email = claims["email"]?.toLowerCase();
   const firstName = claims["first_name"] || null;
   const lastName = claims["last_name"] || null;
   const profileImageUrl = claims["profile_image_url"] || null;
+  
+  const isAdminEmail = email === AUTHORIZED_ADMIN_EMAIL.toLowerCase();
 
   const existingUser = await db.query(
     "SELECT * FROM users WHERE google_id = $1 OR email = $2",
@@ -64,24 +68,51 @@ async function upsertUser(claims) {
 
   if (existingUser.rows.length > 0) {
     const user = existingUser.rows[0];
-    await db.query(
-      `UPDATE users SET 
-        google_id = COALESCE($1, google_id),
-        email = COALESCE($2, email),
-        profile_image_url = COALESCE($3, profile_image_url),
-        updated_at = NOW()
-       WHERE id = $4`,
-      [googleId, email, profileImageUrl, user.id]
-    );
-    return { ...user, google_id: googleId, email, profile_image_url: profileImageUrl };
+    
+    if (isAdminEmail) {
+      await db.query(
+        `UPDATE users SET 
+          google_id = COALESCE($1, google_id),
+          email = COALESCE($2, email),
+          profile_image_url = COALESCE($3, profile_image_url),
+          is_admin = TRUE,
+          is_approved = TRUE,
+          profile_complete = TRUE,
+          updated_at = NOW()
+         WHERE id = $4`,
+        [googleId, email, profileImageUrl, user.id]
+      );
+      return { ...user, google_id: googleId, email, profile_image_url: profileImageUrl, is_admin: true, is_approved: true, profile_complete: true };
+    } else {
+      await db.query(
+        `UPDATE users SET 
+          google_id = COALESCE($1, google_id),
+          email = COALESCE($2, email),
+          profile_image_url = COALESCE($3, profile_image_url),
+          updated_at = NOW()
+         WHERE id = $4`,
+        [googleId, email, profileImageUrl, user.id]
+      );
+      return { ...user, google_id: googleId, email, profile_image_url: profileImageUrl };
+    }
   } else {
-    const result = await db.query(
-      `INSERT INTO users (email, google_id, first_name, last_name, profile_image_url, email_verified, profile_complete, is_approved)
-       VALUES ($1, $2, $3, $4, $5, TRUE, FALSE, FALSE)
-       RETURNING *`,
-      [email, googleId, firstName, lastName, profileImageUrl]
-    );
-    return result.rows[0];
+    if (isAdminEmail) {
+      const result = await db.query(
+        `INSERT INTO users (email, google_id, first_name, last_name, profile_image_url, email_verified, profile_complete, is_approved, is_admin)
+         VALUES ($1, $2, $3, $4, $5, TRUE, TRUE, TRUE, TRUE)
+         RETURNING *`,
+        [email, googleId, firstName, lastName, profileImageUrl]
+      );
+      return result.rows[0];
+    } else {
+      const result = await db.query(
+        `INSERT INTO users (email, google_id, first_name, last_name, profile_image_url, email_verified, profile_complete, is_approved)
+         VALUES ($1, $2, $3, $4, $5, TRUE, FALSE, FALSE)
+         RETURNING *`,
+        [email, googleId, firstName, lastName, profileImageUrl]
+      );
+      return result.rows[0];
+    }
   }
 }
 
