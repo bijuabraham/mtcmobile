@@ -1,57 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity, Alert, Switch, Image } from 'react-native';
-import { Lock, LogOut, User, Bell, Globe } from 'lucide-react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Switch, Image } from 'react-native';
+import { LogOut, User, Bell, Globe } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChurchConfig } from '@/contexts/ChurchConfigContext';
-import { UserSettings } from '@/types/database';
 
 export default function SettingsScreen() {
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [changingPassword, setChangingPassword] = useState(false);
-  const [showPasswordSection, setShowPasswordSection] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
-  const { user, signOut, updatePassword } = useAuth();
+  const { user, signOut } = useAuth();
   const { config } = useChurchConfig();
 
   const primaryColor = config?.primaryColor || '#C41E3A';
-
-  const handlePasswordChange = async () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all password fields');
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters long');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'New passwords do not match');
-      return;
-    }
-
-    try {
-      setChangingPassword(true);
-      await updatePassword(currentPassword, newPassword);
-
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setShowPasswordSection(false);
-
-      Alert.alert('Success', 'Password changed successfully');
-    } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to change password');
-    } finally {
-      setChangingPassword(false);
-    }
-  };
 
   const handleSignOut = async () => {
     try {
@@ -96,72 +57,6 @@ export default function SettingsScreen() {
             <Text style={styles.infoLabel}>User ID</Text>
             <Text style={styles.infoValue}>{user?.id.substring(0, 8)}...</Text>
           </View>
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Lock size={20} color={primaryColor} />
-          <Text style={styles.sectionTitle}>Password</Text>
-        </View>
-        <View style={styles.card}>
-          {!showPasswordSection ? (
-            <TouchableOpacity
-              style={styles.linkButton}
-              onPress={() => setShowPasswordSection(true)}
-            >
-              <Text style={[styles.linkButtonText, { color: primaryColor }]}>
-                Change Password
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.passwordForm}>
-              <Text style={styles.label}>New Password</Text>
-              <TextInput
-                style={styles.input}
-                value={newPassword}
-                onChangeText={setNewPassword}
-                placeholder="Enter new password"
-                secureTextEntry
-                editable={!changingPassword}
-              />
-
-              <Text style={styles.label}>Confirm New Password</Text>
-              <TextInput
-                style={styles.input}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                placeholder="Confirm new password"
-                secureTextEntry
-                editable={!changingPassword}
-              />
-
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                  style={[styles.button, styles.cancelButton]}
-                  onPress={() => {
-                    setShowPasswordSection(false);
-                    setCurrentPassword('');
-                    setNewPassword('');
-                    setConfirmPassword('');
-                  }}
-                  disabled={changingPassword}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.button, styles.primaryButton, { backgroundColor: primaryColor }]}
-                  onPress={handlePasswordChange}
-                  disabled={changingPassword}
-                >
-                  <Text style={styles.primaryButtonText}>
-                    {changingPassword ? 'Changing...' : 'Change Password'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
         </View>
       </View>
 
@@ -322,30 +217,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#333',
-  },
-  linkButton: {
-    paddingVertical: 12,
-  },
-  linkButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  passwordForm: {
-    gap: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  input: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
   },
   buttonContainer: {
     flexDirection: 'row',
