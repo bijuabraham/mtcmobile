@@ -30,6 +30,18 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     
     btn.classList.add('active');
     document.getElementById(`${tabName}-tab`).classList.add('active');
+    
+    // Auto-load data when switching to specific tabs
+    if (tabName === 'contact') {
+      loadContactConfig();
+    } else if (tabName === 'approvals') {
+      loadPendingUsers();
+      loadAllUsers();
+    } else if (tabName === 'announcements') {
+      loadAnnouncements();
+    } else if (tabName === 'admins') {
+      loadAdmins();
+    }
   });
 });
 
