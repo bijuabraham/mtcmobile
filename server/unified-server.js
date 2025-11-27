@@ -4,6 +4,7 @@ const path = require('path');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 require('dotenv').config();
 
+const { setupAuth, isAuthenticated, isApproved } = require('./replitAuth');
 const authRoutes = require('./routes/auth');
 const configRoutes = require('./routes/config');
 const householdRoutes = require('./routes/households');
@@ -16,51 +17,57 @@ const adminRoutes = require('./routes/admin');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+app.set('trust proxy', 1);
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 app.use(express.json());
 
-// Serve admin panel static files with absolute path
-const adminPath = path.join(__dirname, '..', 'admin');
-app.use('/admin', express.static(adminPath, { 
-  dotfiles: 'deny',
-  index: false,
-  extensions: ['html']
-}));
+async function startServer() {
+  try {
+    await setupAuth(app);
+    console.log('✅ Replit Auth initialized');
+  } catch (error) {
+    console.error('⚠️ Replit Auth initialization failed, continuing with legacy auth:', error.message);
+  }
 
-// Serve template files
-const templatesPath = path.join(__dirname, '..', 'templates');
-app.use('/templates', express.static(templatesPath));
-
-// API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/config', configRoutes);
-app.use('/api/households', householdRoutes);
-app.use('/api/members', memberRoutes);
-app.use('/api/donations', donationRoutes);
-app.use('/api/announcements', announcementRoutes);
-app.use('/api/contacts', contactRoutes);
-app.use('/api/admin', adminRoutes);
-
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Church Management API is running' });
-});
-
-// In development, proxy to Expo dev server on port 8081
-// In production, serve API info page
-if (process.env.NODE_ENV !== 'production') {
-  app.use('/', createProxyMiddleware({
-    target: 'http://localhost:8081',
-    changeOrigin: true,
-    ws: true,
-    logLevel: 'silent',
-    filter: (pathname, req) => {
-      return !pathname.startsWith('/admin') && !pathname.startsWith('/api');
-    }
+  const adminPath = path.join(__dirname, '..', 'admin');
+  app.use('/admin', express.static(adminPath, { 
+    dotfiles: 'deny',
+    index: false,
+    extensions: ['html']
   }));
-} else {
-  // Production: Serve API info page at root
-  app.get('/', (req, res) => {
-    res.status(200).send(`
+
+  const templatesPath = path.join(__dirname, '..', 'templates');
+  app.use('/templates', express.static(templatesPath));
+
+  app.use('/api/auth/legacy', authRoutes);
+  app.use('/api/config', configRoutes);
+  app.use('/api/households', householdRoutes);
+  app.use('/api/members', memberRoutes);
+  app.use('/api/donations', donationRoutes);
+  app.use('/api/announcements', announcementRoutes);
+  app.use('/api/contacts', contactRoutes);
+  app.use('/api/admin', adminRoutes);
+
+  app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'Church Management API is running' });
+  });
+
+  if (process.env.NODE_ENV !== 'production') {
+    app.use('/', createProxyMiddleware({
+      target: 'http://localhost:8081',
+      changeOrigin: true,
+      ws: true,
+      logLevel: 'silent',
+      filter: (pathname, req) => {
+        return !pathname.startsWith('/admin') && !pathname.startsWith('/api');
+      }
+    }));
+  } else {
+    app.get('/', (req, res) => {
+      res.status(200).send(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -125,42 +132,47 @@ if (process.env.NODE_ENV !== 'production') {
 </head>
 <body>
   <div class="container">
-    <h1>🏛️ Church Management API</h1>
+    <h1>Church Management API</h1>
     <p class="subtitle">Backend API & Admin Portal</p>
-    <div class="status">✓ API Running</div>
+    <div class="status">API Running</div>
     <div class="section">
       <h2>Admin Portal</h2>
       <div class="link-box">
         <h3>Configuration Dashboard</h3>
         <p>Manage church settings, colors, logo, and upload member data</p>
-        <a href="/admin/login.html">Access Admin Portal →</a>
+        <a href="/admin/login.html">Access Admin Portal</a>
       </div>
     </div>
     <div class="section">
       <h2>API Endpoints</h2>
       <p style="color: #666; font-size: 14px;">
-        Authentication • Configuration • Members • Households • Donations • Announcements • Contacts
+        Authentication - Configuration - Members - Households - Donations - Announcements - Contacts
       </p>
     </div>
   </div>
 </body>
 </html>
-    `);
+      `);
+    });
+  }
+
+  app.use((err, req, res, next) => {
+    console.error('Error:', err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Unified server running on port ${PORT}`);
+    console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);
+    console.log(`🌐 Frontend proxied from port 8081`);
   });
 }
 
-// Error handler
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  if (!res.headersSent) {
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Unified server running on port ${PORT}`);
-  console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);
-  console.log(`🌐 Frontend proxied from port 8081`);
+startServer().catch(err => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
 });
 
 module.exports = app;

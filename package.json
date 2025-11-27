@@ -12,12 +12,16 @@
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
     "bcrypt": "^6.0.0",
+    "connect-pg-simple": "^10.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "express-session": "^1.18.2",
     "http-proxy-middleware": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
+    "openid-client": "^6.8.1",
+    "passport": "^0.7.0",
     "pg": "^8.16.3",
     "serve": "^14.2.5",
     "xlsx": "^0.18.5"

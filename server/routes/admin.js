@@ -678,7 +678,9 @@ router.post('/upload/prayer-groups', upload.single('file'), async (req, res) => 
 router.get('/users', async (req, res) => {
   try {
     const result = await db.query(
-      'SELECT id, email, is_admin, household_id, created_at FROM users ORDER BY email ASC'
+      `SELECT id, email, first_name, last_name, donor_number, is_admin, is_approved, profile_complete, 
+              household_id, created_at, approved_at 
+       FROM users ORDER BY email ASC`
     );
     
     const users = result.rows.map(user => keysToCamelCase(user));
@@ -686,6 +688,77 @@ router.get('/users', async (req, res) => {
   } catch (error) {
     console.error('Error fetching users:', error);
     res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+router.get('/users/pending', async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT id, email, first_name, last_name, donor_number, profile_complete, created_at 
+       FROM users 
+       WHERE profile_complete = TRUE AND is_approved = FALSE 
+       ORDER BY created_at DESC`
+    );
+    
+    const users = result.rows.map(user => keysToCamelCase(user));
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching pending users:', error);
+    res.status(500).json({ error: 'Failed to fetch pending users' });
+  }
+});
+
+router.put('/users/:id/approve', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const adminId = req.adminId;
+    
+    const checkResult = await db.query('SELECT id, email FROM users WHERE id = $1', [id]);
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const result = await db.query(
+      `UPDATE users SET 
+         is_approved = TRUE, 
+         approved_at = NOW(), 
+         approved_by = $1,
+         updated_at = NOW() 
+       WHERE id = $2 
+       RETURNING id, email, first_name, last_name, donor_number, is_approved, approved_at`,
+      [adminId, id]
+    );
+    
+    const user = keysToCamelCase(result.rows[0]);
+    res.json({ 
+      success: true, 
+      user,
+      message: `User ${user.email} has been approved`
+    });
+  } catch (error) {
+    console.error('Error approving user:', error);
+    res.status(500).json({ error: 'Failed to approve user' });
+  }
+});
+
+router.put('/users/:id/reject', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const checkResult = await db.query('SELECT id, email FROM users WHERE id = $1', [id]);
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    await db.query('DELETE FROM users WHERE id = $1', [id]);
+    
+    res.json({ 
+      success: true, 
+      message: `User has been rejected and removed`
+    });
+  } catch (error) {
+    console.error('Error rejecting user:', error);
+    res.status(500).json({ error: 'Failed to reject user' });
   }
 });
 
