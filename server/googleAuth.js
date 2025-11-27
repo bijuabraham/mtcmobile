@@ -250,6 +250,67 @@ async function setupAuth(app) {
     });
   });
 
+  app.get("/api/admin/auth/login", passport.authenticate("google", {
+    scope: ["profile", "email"],
+    prompt: "select_account",
+    state: "admin_login"
+  }));
+
+  app.get("/api/admin/auth/callback", 
+    passport.authenticate("google", { 
+      failureRedirect: "/admin/login.html?error=auth_failed" 
+    }),
+    async (req, res) => {
+      const email = req.user?.dbUser?.email?.toLowerCase();
+      
+      if (email !== AUTHORIZED_ADMIN_EMAIL.toLowerCase()) {
+        req.logout(() => {
+          req.session.destroy(() => {
+            res.redirect("/admin/login.html?error=unauthorized");
+          });
+        });
+        return;
+      }
+      
+      res.redirect("/admin/index.html");
+    }
+  );
+
+  app.get("/api/admin/auth/check", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ authenticated: false });
+    }
+
+    const email = req.user.dbUser?.email?.toLowerCase();
+    if (email !== AUTHORIZED_ADMIN_EMAIL.toLowerCase()) {
+      return res.status(403).json({ authenticated: false, error: "Not authorized" });
+    }
+
+    res.json({ 
+      authenticated: true, 
+      user: {
+        email: req.user.dbUser.email,
+        firstName: req.user.dbUser.first_name,
+        lastName: req.user.dbUser.last_name
+      }
+    });
+  });
+
+  app.post("/api/admin/auth/logout", (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        console.error("Logout error:", err);
+      }
+      req.session.destroy((err) => {
+        if (err) {
+          console.error("Session destroy error:", err);
+        }
+        res.clearCookie('connect.sid');
+        res.json({ success: true });
+      });
+    });
+  });
+
   app.post("/api/auth/complete-profile", async (req, res) => {
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ error: "Not authenticated" });

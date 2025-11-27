@@ -1,5 +1,25 @@
 const API_BASE = '/api';
 
+// Check authentication on page load
+async function checkAuth() {
+  try {
+    const response = await fetch(`${API_BASE}/admin/auth/check`, {
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      window.location.href = '/admin/login.html';
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Auth check failed:', error);
+    window.location.href = '/admin/login.html';
+    return false;
+  }
+}
+
 // Tab switching
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -100,9 +120,9 @@ document.getElementById('configForm').addEventListener('submit', async (e) => {
     const response = await fetch(`${API_BASE}/admin/config`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        'Content-Type': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify(formData)
     });
     
@@ -223,9 +243,9 @@ document.getElementById('contactForm').addEventListener('submit', async (e) => {
     const response = await fetch(`${API_BASE}/admin/config`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        'Content-Type': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify(mergedData)
     });
     
@@ -312,7 +332,7 @@ function uploadWithProgress(url, file, progressContainerId, progressFillId, prog
     });
     
     xhr.open('POST', url);
-    xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('adminToken')}`);
+    xhr.withCredentials = true;
     xhr.send(formData);
   });
 }
@@ -416,11 +436,8 @@ document.getElementById('loadConfigBtn').addEventListener('click', loadConfig);
 // Announcements Management
 async function loadAnnouncements() {
   try {
-    const token = localStorage.getItem('adminToken');
     const response = await fetch(`${API_BASE}/announcements/admin/all`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      credentials: 'include'
     });
     
     if (!response.ok) throw new Error('Failed to load announcements');
@@ -463,8 +480,6 @@ document.getElementById('announcementsForm').addEventListener('submit', async (e
   e.preventDefault();
   
   try {
-    const token = localStorage.getItem('adminToken');
-    
     const announcements = [
       {
         id: document.getElementById('announcement1Id').value || null,
@@ -483,9 +498,9 @@ document.getElementById('announcementsForm').addEventListener('submit', async (e
     const response = await fetch(`${API_BASE}/announcements/admin/save`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify({ announcements })
     });
     
@@ -608,19 +623,23 @@ document.getElementById('prayerGroupsUploadForm').addEventListener('submit', asy
 });
 
 // Logout
-document.getElementById('logoutBtn').addEventListener('click', () => {
-  localStorage.removeItem('adminToken');
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  try {
+    await fetch(`${API_BASE}/admin/auth/logout`, {
+      method: 'POST',
+      credentials: 'include'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+  }
   window.location.href = '/admin/login.html';
 });
 
 // Admin Management Functions
 async function loadAdmins() {
   try {
-    const token = localStorage.getItem('adminToken');
     const response = await fetch(`${API_BASE}/admin/users/admins`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      credentials: 'include'
     });
     
     if (!response.ok) throw new Error('Failed to load admins');
@@ -666,13 +685,12 @@ async function revokeAdmin(userId, email) {
   }
   
   try {
-    const token = localStorage.getItem('adminToken');
     const response = await fetch(`${API_BASE}/admin/users/${userId}/admin`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify({ isAdmin: false })
     });
     
@@ -702,12 +720,8 @@ document.getElementById('grantAdminForm').addEventListener('submit', async (e) =
   }
   
   try {
-    const token = localStorage.getItem('adminToken');
-    
     const usersResponse = await fetch(`${API_BASE}/admin/users`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      credentials: 'include'
     });
     
     if (!usersResponse.ok) {
@@ -728,9 +742,9 @@ document.getElementById('grantAdminForm').addEventListener('submit', async (e) =
     const response = await fetch(`${API_BASE}/admin/users/${user.id}/admin`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'application/json'
       },
+      credentials: 'include',
       body: JSON.stringify({ isAdmin: true })
     });
     
@@ -768,11 +782,8 @@ async function loadPendingUsers() {
   const container = document.getElementById('pendingUsersContainer');
   
   try {
-    const token = localStorage.getItem('adminToken');
     const response = await fetch(`${API_BASE}/admin/users/pending`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      credentials: 'include'
     });
     
     if (!response.ok) {
@@ -827,11 +838,8 @@ async function loadAllUsers() {
   const container = document.getElementById('allUsersContainer');
   
   try {
-    const token = localStorage.getItem('adminToken');
     const response = await fetch(`${API_BASE}/admin/users`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      credentials: 'include'
     });
     
     if (!response.ok) {
@@ -899,13 +907,12 @@ async function approveUser(userId) {
   }
   
   try {
-    const token = localStorage.getItem('adminToken');
     const response = await fetch(`${API_BASE}/admin/users/${userId}/approve`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include'
     });
     
     const result = await response.json();
@@ -929,13 +936,12 @@ async function rejectUser(userId) {
   }
   
   try {
-    const token = localStorage.getItem('adminToken');
     const response = await fetch(`${API_BASE}/admin/users/${userId}/reject`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include'
     });
     
     const result = await response.json();
@@ -954,11 +960,10 @@ async function rejectUser(userId) {
 }
 
 // Load config on page load
-window.addEventListener('load', () => {
-  // Check if logged in
-  const token = localStorage.getItem('adminToken');
-  if (!token) {
-    window.location.href = '/admin/login.html';
+window.addEventListener('load', async () => {
+  // Check if logged in with session
+  const isAuthenticated = await checkAuth();
+  if (!isAuthenticated) {
     return;
   }
   
