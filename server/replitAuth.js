@@ -182,6 +182,53 @@ async function setupAuth(app) {
     }
   });
 
+  app.get("/api/auth/me", async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.json({ user: null });
+    }
+
+    try {
+      const dbUser = await db.query(
+        "SELECT id, email, first_name, last_name, donor_number, is_approved, profile_complete, profile_image_url, is_admin FROM users WHERE id = $1",
+        [req.user.dbUser?.id]
+      );
+
+      if (dbUser.rows.length === 0) {
+        return res.json({ user: null });
+      }
+
+      const user = dbUser.rows[0];
+      res.json({ 
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          donorNumber: user.donor_number,
+          isApproved: user.is_approved,
+          profileComplete: user.profile_complete,
+          profileImageUrl: user.profile_image_url,
+          isAdmin: user.is_admin
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ error: "Failed to fetch user" });
+    }
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    req.logout(() => {
+      req.session.destroy((err) => {
+        if (err) {
+          console.error("Session destroy error:", err);
+        }
+        res.clearCookie('connect.sid');
+        res.json({ success: true });
+      });
+    });
+  });
+
   app.post("/api/auth/complete-profile", async (req, res) => {
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ error: "Not authenticated" });
@@ -210,8 +257,19 @@ async function setupAuth(app) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      req.user.dbUser = result.rows[0];
-      res.json(result.rows[0]);
+      const dbUser = result.rows[0];
+      req.user.dbUser = dbUser;
+      res.json({ 
+        user: {
+          id: dbUser.id,
+          email: dbUser.email,
+          firstName: dbUser.first_name,
+          lastName: dbUser.last_name,
+          donorNumber: dbUser.donor_number,
+          isApproved: dbUser.is_approved,
+          profileComplete: dbUser.profile_complete
+        }
+      });
     } catch (error) {
       console.error("Error completing profile:", error);
       res.status(500).json({ error: "Failed to update profile" });

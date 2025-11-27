@@ -1,19 +1,26 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { api } from '@/lib/api';
 
 interface User {
   id: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
+  donorNumber?: string;
+  isApproved?: boolean;
+  profileComplete?: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  needsProfileCompletion: boolean;
+  isPendingApproval: boolean;
+  isApproved: boolean;
+  checkAuth: () => Promise<void>;
   signOut: () => Promise<void>;
-  updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  completeProfile: (firstName: string, lastName: string, donorNumber: string) => Promise<void>;
+  getLoginUrl: () => string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,45 +29,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
-      const token = await AsyncStorage.getItem('auth_token');
-      if (token) {
-        const data = await api.getMe();
+      const data = await api.getMe();
+      if (data.user) {
         setUser(data.user);
+      } else {
+        setUser(null);
       }
     } catch (error) {
-      await AsyncStorage.removeItem('auth_token');
+      setUser(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const data = await api.signIn(email, password);
-    setUser(data.user);
-  };
-
-  const signUp = async (email: string, password: string) => {
-    const data = await api.signUp(email, password);
-    setUser(data.user);
-  };
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   const signOut = async () => {
-    await api.signOut();
+    try {
+      await api.signOut();
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
     setUser(null);
   };
 
-  const updatePassword = async (currentPassword: string, newPassword: string) => {
-    await api.changePassword(currentPassword, newPassword);
+  const completeProfile = async (firstName: string, lastName: string, donorNumber: string) => {
+    const data = await api.completeProfile(firstName, lastName, donorNumber);
+    if (data.user) {
+      setUser(data.user);
+    }
   };
 
+  const getLoginUrl = () => {
+    return api.getLoginUrl();
+  };
+
+  const needsProfileCompletion = user !== null && user.profileComplete === false;
+  const isPendingApproval = user !== null && user.profileComplete === true && user.isApproved === false;
+  const isApproved = user !== null && user.profileComplete === true && user.isApproved === true;
+
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, updatePassword }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      loading, 
+      needsProfileCompletion,
+      isPendingApproval,
+      isApproved,
+      checkAuth,
+      signOut,
+      completeProfile,
+      getLoginUrl
+    }}>
       {children}
     </AuthContext.Provider>
   );

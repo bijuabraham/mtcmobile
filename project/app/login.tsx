@@ -1,79 +1,46 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChurchConfig } from '@/contexts/ChurchConfigContext';
-import { api } from '@/lib/api';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { user, checkAuth, getLoginUrl, needsProfileCompletion, isPendingApproval, isApproved } = useAuth();
   const { config } = useChurchConfig();
   const router = useRouter();
 
-  const handleLogin = async () => {
-    if (isForgotPassword) {
-      // Forgot password flow
-      if (!email) {
-        setError('Please enter your email address');
-        return;
-      }
-
-      setLoading(true);
-      setError('');
-
-      try {
-        await api.forgotPassword(email);
-        alert('Password reset link sent! Please check your email.');
-        setIsForgotPassword(false);
-        setEmail('');
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to send password reset email');
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
-
-    // Regular sign in / sign up flow
-    if (!email || !password) {
-      setError('Please enter both email and password');
-      return;
-    }
-
-    if (isSignUp && password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-
-    if (isSignUp && password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      if (isSignUp) {
-        await signUp(email, password);
-        setError('');
-        alert('Account created successfully! Please check your email to verify your account before signing in.');
-        setIsSignUp(false);
-        setPassword('');
-        setConfirmPassword('');
-      } else {
-        await signIn(email, password);
+  useEffect(() => {
+    if (user) {
+      if (needsProfileCompletion) {
+        router.replace('/complete-profile');
+      } else if (isPendingApproval) {
+        router.replace('/pending-approval');
+      } else if (isApproved) {
         router.replace('/(tabs)');
       }
+    }
+  }, [user, needsProfileCompletion, isPendingApproval, isApproved, router]);
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const loginUrl = getLoginUrl();
+      const result = await WebBrowser.openAuthSessionAsync(
+        loginUrl,
+        Linking.createURL('/login')
+      );
+      
+      if (result.type === 'success') {
+        await checkAuth();
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Failed to ${isSignUp ? 'sign up' : 'sign in'}`);
+      setError(err instanceof Error ? err.message : 'Failed to sign in');
     } finally {
       setLoading(false);
     }
@@ -82,11 +49,8 @@ export default function LoginScreen() {
   const primaryColor = config?.primaryColor || '#C41E3A';
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+    <View style={styles.container}>
+      <View style={styles.content}>
         <View style={styles.logoContainer}>
           {config?.logoUrl ? (
             <Image source={{ uri: config.logoUrl }} style={styles.logo} resizeMode="contain" />
@@ -99,107 +63,34 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.formContainer}>
-          <Text style={styles.title}>
-            {isForgotPassword ? 'Reset Password' : isSignUp ? 'Create Account' : 'Welcome Back'}
-          </Text>
+          <Text style={styles.title}>Welcome</Text>
+          <Text style={styles.subtitle}>Sign in to access your church community</Text>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            editable={!loading}
-          />
-
-          {!isForgotPassword && (
-            <>
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                editable={!loading}
-              />
-
-              {isSignUp && (
-                <TextInput
-                  style={styles.input}
-                  placeholder="Confirm Password"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry
-                  editable={!loading}
-                />
-              )}
-            </>
-          )}
-
-          {isForgotPassword && (
-            <Text style={styles.helperText}>
-              Enter your email address and we'll send you a link to reset your password.
-            </Text>
-          )}
-
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: primaryColor }]}
-            onPress={handleLogin}
+            style={[styles.googleButton]}
+            onPress={handleGoogleLogin}
             disabled={loading}
           >
-            <Text style={styles.buttonText}>
-              {loading 
-                ? (isForgotPassword ? 'Sending...' : isSignUp ? 'Creating Account...' : 'Signing In...') 
-                : (isForgotPassword ? 'Send Reset Link' : isSignUp ? 'Create Account' : 'Sign In')
-              }
-            </Text>
+            {loading ? (
+              <ActivityIndicator color="#333" />
+            ) : (
+              <>
+                <View style={styles.googleIconContainer}>
+                  <Text style={styles.googleIcon}>G</Text>
+                </View>
+                <Text style={styles.googleButtonText}>Sign in with Google</Text>
+              </>
+            )}
           </TouchableOpacity>
 
-          {!isForgotPassword && !isSignUp && (
-            <TouchableOpacity
-              style={styles.forgotPasswordButton}
-              onPress={() => {
-                setIsForgotPassword(true);
-                setError('');
-                setPassword('');
-              }}
-              disabled={loading}
-            >
-              <Text style={[styles.forgotPasswordText, { color: primaryColor }]}>
-                Forgot Password?
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            style={styles.toggleButton}
-            onPress={() => {
-              if (isForgotPassword) {
-                setIsForgotPassword(false);
-              } else {
-                setIsSignUp(!isSignUp);
-              }
-              setError('');
-              setPassword('');
-              setConfirmPassword('');
-            }}
-            disabled={loading}
-          >
-            <Text style={[styles.toggleButtonText, { color: primaryColor }]}>
-              {isForgotPassword 
-                ? 'Back to Sign In' 
-                : isSignUp 
-                  ? 'Already have an account? Sign In' 
-                  : "Don't have an account? Sign Up"
-              }
-            </Text>
-          </TouchableOpacity>
+          <Text style={styles.helperText}>
+            Use your Google account to sign in. First-time users will need to complete their profile and wait for admin approval.
+          </Text>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </View>
+    </View>
   );
 }
 
@@ -208,14 +99,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  scrollContent: {
-    flexGrow: 1,
+  content: {
+    flex: 1,
     justifyContent: 'center',
-    padding: 20,
+    padding: 24,
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 48,
   },
   logo: {
     width: 120,
@@ -236,40 +127,27 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   churchName: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: '#333',
     textAlign: 'center',
   },
   formContainer: {
     width: '100%',
+    alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 24,
+    marginBottom: 8,
     textAlign: 'center',
   },
-  input: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-    padding: 16,
+  subtitle: {
     fontSize: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  button: {
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
+    color: '#666',
+    marginBottom: 32,
+    textAlign: 'center',
   },
   errorText: {
     color: '#D32F2F',
@@ -277,29 +155,49 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: 'center',
   },
-  toggleButton: {
-    marginTop: 16,
-    padding: 12,
+  googleButton: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DADCE0',
+    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    width: '100%',
+    maxWidth: 320,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  toggleButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  forgotPasswordButton: {
-    marginTop: 12,
-    padding: 8,
+  googleIconContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#4285F4',
+    justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
   },
-  forgotPasswordText: {
+  googleIcon: {
+    color: '#FFFFFF',
     fontSize: 14,
+    fontWeight: 'bold',
+  },
+  googleButtonText: {
+    fontSize: 16,
     fontWeight: '500',
+    color: '#333',
   },
   helperText: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
+    fontSize: 13,
+    color: '#888',
+    marginTop: 24,
     textAlign: 'center',
     lineHeight: 20,
+    paddingHorizontal: 16,
   },
 });

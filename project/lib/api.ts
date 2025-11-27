@@ -1,5 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
 const getApiUrl = () => {
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
@@ -12,16 +10,22 @@ const getApiUrl = () => {
   return '/api';
 };
 
+const getBaseUrl = () => {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL.replace('/api', '');
+  }
+  
+  if (typeof window !== 'undefined' && window.location) {
+    return `${window.location.protocol}//${window.location.host}`;
+  }
+  
+  return '';
+};
+
 const API_URL = getApiUrl();
 
 class ApiClient {
-  private async getToken(): Promise<string | null> {
-    return await AsyncStorage.getItem('auth_token');
-  }
-
   private async request(endpoint: string, options: RequestInit = {}) {
-    const token = await this.getToken();
-    
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
@@ -30,13 +34,10 @@ class ApiClient {
       Object.assign(headers, options.headers);
     }
 
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
       headers,
+      credentials: 'include',
     });
 
     if (!response.ok) {
@@ -47,53 +48,29 @@ class ApiClient {
     return response.json();
   }
 
-  // Auth endpoints
-  async signUp(email: string, password: string) {
-    const data = await this.request('/auth/signup', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-    await AsyncStorage.setItem('auth_token', data.token);
-    return data;
-  }
-
-  async signIn(email: string, password: string) {
-    const data = await this.request('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-    await AsyncStorage.setItem('auth_token', data.token);
-    return data;
-  }
-
-  async signOut() {
-    await AsyncStorage.removeItem('auth_token');
-  }
-
-  async forgotPassword(email: string) {
-    return this.request('/auth/forgot-password', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
-  }
-
-  async changePassword(currentPassword: string, newPassword: string) {
-    return this.request('/auth/change-password', {
-      method: 'POST',
-      body: JSON.stringify({ currentPassword, newPassword }),
-    });
+  getLoginUrl(): string {
+    return `${getBaseUrl()}/api/auth/login`;
   }
 
   async getMe() {
     return this.request('/auth/me');
   }
 
-  // Config endpoints
+  async signOut() {
+    return this.request('/auth/logout', { method: 'POST' });
+  }
+
+  async completeProfile(firstName: string, lastName: string, donorNumber: string) {
+    return this.request('/auth/complete-profile', {
+      method: 'POST',
+      body: JSON.stringify({ firstName, lastName, donorNumber }),
+    });
+  }
+
   async getConfig() {
     return this.request('/config');
   }
 
-  // Household endpoints
   async getHousehold() {
     return this.request('/households');
   }
@@ -116,13 +93,11 @@ class ApiClient {
     });
   }
 
-  // Member endpoints
   async getMembers(search?: string) {
     const queryParams = search ? `?search=${encodeURIComponent(search)}` : '';
     return this.request(`/members${queryParams}`);
   }
 
-  // Donation endpoints
   async getDonations(startDate?: string, endDate?: string) {
     const params = new URLSearchParams();
     if (startDate) params.append('start_date', startDate);
@@ -131,12 +106,10 @@ class ApiClient {
     return this.request(`/donations${queryString ? `?${queryString}` : ''}`);
   }
 
-  // Announcement endpoints
   async getAnnouncements() {
     return this.request('/announcements');
   }
 
-  // Contact endpoints
   async getContacts() {
     return this.request('/contacts');
   }
