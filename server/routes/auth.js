@@ -275,13 +275,16 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    const token = generateToken(user.id, user.is_admin || false);
+    const AUTHORIZED_ADMIN_EMAIL = 'admin@marthomasf.org';
+    const isAuthorizedAdmin = user.is_admin && user.email.toLowerCase() === AUTHORIZED_ADMIN_EMAIL.toLowerCase();
+    
+    const token = generateToken(user.id, isAuthorizedAdmin);
 
     res.json({
       user: {
         id: user.id,
         email: user.email,
-        isAdmin: user.is_admin || false,
+        isAdmin: isAuthorizedAdmin,
         emailVerified: user.email_verified
       },
       token

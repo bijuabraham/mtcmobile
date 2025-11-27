@@ -2,6 +2,8 @@ const jwt = require('jsonwebtoken');
 const db = require('../db');
 const { JWT_SECRET } = require('../utils/jwt');
 
+const AUTHORIZED_ADMIN_EMAIL = 'admin@marthomasf.org';
+
 async function requireAdmin(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
@@ -30,6 +32,10 @@ async function requireAdmin(req, res, next) {
 
     if (!user.is_admin) {
       return res.status(403).json({ error: 'Admin access revoked. Please contact administrator.' });
+    }
+
+    if (user.email.toLowerCase() !== AUTHORIZED_ADMIN_EMAIL.toLowerCase()) {
+      return res.status(403).json({ error: 'Access denied. Only the authorized administrator can access this panel.' });
     }
 
     req.user = user;
