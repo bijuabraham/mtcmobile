@@ -184,8 +184,14 @@ async function setupAuth(app) {
           });
           return;
         }
-        console.log(`Admin login successful for ${email}`);
-        res.redirect("/admin/index.html");
+        // Store admin user ID directly in session as backup (outside of passport)
+        req.session.adminUserId = req.user?.dbUser?.id;
+        req.session.save((err) => {
+          if (err) console.error('Session save error:', err);
+          console.log(`Admin login successful for ${email}`);
+          res.redirect("/admin/index.html");
+        });
+        return;
       } else {
         console.log(`User login for ${email}`);
         res.redirect("/");
