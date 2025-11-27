@@ -16,6 +16,7 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="config">Configuration</button>
       <button class="tab-btn" data-tab="contact">Contact Us</button>
+      <button class="tab-btn" data-tab="approvals">User Approvals</button>
       <button class="tab-btn" data-tab="announcements">Announcements</button>
       <button class="tab-btn" data-tab="members">Members Upload</button>
       <button class="tab-btn" data-tab="households">Households Upload</button>
@@ -308,6 +309,23 @@
           <button type="button" id="loadContactBtn" class="btn-secondary">Load Current Configuration</button>
         </div>
       </form>
+    </div>
+
+    <!-- User Approvals Tab -->
+    <div id="approvals-tab" class="tab-content">
+      <h2>User Approvals</h2>
+      <p style="color: #666; margin-bottom: 20px;">Review and approve users who have registered via Google sign-in. Users must be approved before they can access the directory and donations.</p>
+      
+      <div id="pendingUsersContainer">
+        <div class="loading-message">Loading pending users...</div>
+      </div>
+
+      <div id="allUsersSection" style="margin-top: 40px;">
+        <h3>All Registered Users</h3>
+        <div id="allUsersContainer">
+          <div class="loading-message">Loading users...</div>
+        </div>
+      </div>
     </div>
 
     <!-- Announcements Tab -->

@@ -763,6 +763,196 @@ document.getElementById('refreshAdminsBtn').addEventListener('click', () => {
   loadAdmins();
 });
 
+// User Approvals Functions
+async function loadPendingUsers() {
+  const container = document.getElementById('pendingUsersContainer');
+  
+  try {
+    const token = localStorage.getItem('adminToken');
+    const response = await fetch(`${API_BASE}/admin/users/pending`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to load pending users');
+    }
+    
+    const users = await response.json();
+    
+    if (users.length === 0) {
+      container.innerHTML = `
+        <div class="info-box" style="text-align: center; padding: 30px;">
+          <p style="color: #666; font-size: 16px;">No pending user approvals</p>
+          <p style="color: #888; font-size: 14px;">Users who register will appear here for approval</p>
+        </div>
+      `;
+      return;
+    }
+    
+    container.innerHTML = `
+      <div class="pending-users-list">
+        <h3 style="color: #f59e0b; margin-bottom: 15px;">Pending Approvals (${users.length})</h3>
+        ${users.map(user => `
+          <div class="user-card pending" data-user-id="${user.id}">
+            <div class="user-info">
+              <div class="user-name">${user.firstName || ''} ${user.lastName || ''}</div>
+              <div class="user-email">${user.email}</div>
+              <div class="user-meta">
+                <span class="donor-number">Donor #: ${user.donorNumber || 'N/A'}</span>
+                <span class="registered-date">Registered: ${new Date(user.createdAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+            <div class="user-actions">
+              <button class="btn-approve" onclick="approveUser(${user.id})">Approve</button>
+              <button class="btn-reject" onclick="rejectUser(${user.id})">Reject</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } catch (error) {
+    console.error('Error loading pending users:', error);
+    container.innerHTML = `
+      <div class="result-box error">
+        <p>Error loading pending users: ${error.message}</p>
+        <button class="btn-secondary" onclick="loadPendingUsers()">Retry</button>
+      </div>
+    `;
+  }
+}
+
+async function loadAllUsers() {
+  const container = document.getElementById('allUsersContainer');
+  
+  try {
+    const token = localStorage.getItem('adminToken');
+    const response = await fetch(`${API_BASE}/admin/users`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to load users');
+    }
+    
+    const users = await response.json();
+    
+    if (users.length === 0) {
+      container.innerHTML = '<p style="color: #666;">No registered users</p>';
+      return;
+    }
+    
+    container.innerHTML = `
+      <div class="users-table-container">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Donor #</th>
+              <th>Status</th>
+              <th>Registered</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${users.map(user => `
+              <tr class="${user.isApproved ? 'approved' : (user.profileComplete ? 'pending' : 'incomplete')}">
+                <td>${user.firstName || ''} ${user.lastName || ''}</td>
+                <td>${user.email}</td>
+                <td>${user.donorNumber || '-'}</td>
+                <td>
+                  <span class="status-badge ${user.isApproved ? 'status-approved' : (user.profileComplete ? 'status-pending' : 'status-incomplete')}">
+                    ${user.isApproved ? 'Approved' : (user.profileComplete ? 'Pending' : 'Incomplete Profile')}
+                  </span>
+                </td>
+                <td>${new Date(user.createdAt).toLocaleDateString()}</td>
+                <td>
+                  ${!user.isApproved && user.profileComplete ? `
+                    <button class="btn-approve-small" onclick="approveUser(${user.id})">Approve</button>
+                  ` : ''}
+                  ${user.isApproved ? '<span style="color: #10b981;">Active</span>' : ''}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (error) {
+    console.error('Error loading users:', error);
+    container.innerHTML = `
+      <div class="result-box error">
+        <p>Error loading users: ${error.message}</p>
+        <button class="btn-secondary" onclick="loadAllUsers()">Retry</button>
+      </div>
+    `;
+  }
+}
+
+async function approveUser(userId) {
+  if (!confirm('Are you sure you want to approve this user?')) {
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('adminToken');
+    const response = await fetch(`${API_BASE}/admin/users/${userId}/approve`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to approve user');
+    }
+    
+    showNotification(result.message || 'User approved successfully');
+    loadPendingUsers();
+    loadAllUsers();
+  } catch (error) {
+    console.error('Error approving user:', error);
+    showNotification(error.message, 'error');
+  }
+}
+
+async function rejectUser(userId) {
+  if (!confirm('Are you sure you want to reject this user? This will permanently delete their registration.')) {
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('adminToken');
+    const response = await fetch(`${API_BASE}/admin/users/${userId}/reject`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to reject user');
+    }
+    
+    showNotification(result.message || 'User rejected successfully');
+    loadPendingUsers();
+    loadAllUsers();
+  } catch (error) {
+    console.error('Error rejecting user:', error);
+    showNotification(error.message, 'error');
+  }
+}
+
 // Load config on page load
 window.addEventListener('load', () => {
   // Check if logged in
@@ -775,4 +965,6 @@ window.addEventListener('load', () => {
   loadConfig();
   loadAnnouncements();
   loadAdmins();
+  loadPendingUsers();
+  loadAllUsers();
 });
