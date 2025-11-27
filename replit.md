@@ -17,6 +17,7 @@ Preferred communication style: Simple, everyday language.
   - Suspended users are blocked from accessing protected data and see a dedicated "Account Suspended" screen with contact information
 - **Profile Completion Redirect Fix**: Root layout now properly redirects new users to complete-profile screen based on authentication state priority (suspended > incomplete profile > pending approval > approved)
 - **Donor Number in Settings**: Users can now view and edit their Donor Number in the Settings page with inline editing
+- **Household Linking on Approval**: When admin approves a user, the system automatically links them to their household by matching user's donor_number with household's donor_id
 
 ## System Architecture
 

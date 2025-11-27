@@ -713,9 +713,27 @@ router.put('/users/:id/approve', async (req, res) => {
     const { id } = req.params;
     const adminId = req.adminId;
     
-    const checkResult = await db.query('SELECT id, email FROM users WHERE id = $1', [id]);
+    const checkResult = await db.query('SELECT id, email, donor_number FROM users WHERE id = $1', [id]);
     if (checkResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const userDonorNumber = checkResult.rows[0].donor_number;
+    let householdId = null;
+    let householdMessage = '';
+    
+    if (userDonorNumber) {
+      const householdResult = await db.query(
+        'SELECT id, family_name FROM households WHERE donor_id = $1',
+        [userDonorNumber]
+      );
+      
+      if (householdResult.rows.length > 0) {
+        householdId = householdResult.rows[0].id;
+        householdMessage = ` and linked to household "${householdResult.rows[0].family_name}"`;
+      } else {
+        householdMessage = ' (no matching household found for donor number)';
+      }
     }
     
     const result = await db.query(
@@ -723,17 +741,18 @@ router.put('/users/:id/approve', async (req, res) => {
          is_approved = TRUE, 
          approved_at = NOW(), 
          approved_by = $1,
+         household_id = COALESCE($3, household_id),
          updated_at = NOW() 
        WHERE id = $2 
-       RETURNING id, email, first_name, last_name, donor_number, is_approved, approved_at`,
-      [adminId, id]
+       RETURNING id, email, first_name, last_name, donor_number, is_approved, approved_at, household_id`,
+      [adminId, id, householdId]
     );
     
     const user = keysToCamelCase(result.rows[0]);
     res.json({ 
       success: true, 
       user,
-      message: `User ${user.email} has been approved`
+      message: `User ${user.email} has been approved${householdMessage}`
     });
   } catch (error) {
     console.error('Error approving user:', error);

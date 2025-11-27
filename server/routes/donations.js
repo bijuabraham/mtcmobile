@@ -11,18 +11,21 @@ router.get('/', authenticateAndRequireApproval, async (req, res) => {
     const { start_date, end_date } = req.query;
 
     const userResult = await db.query(
-      'SELECT household_id FROM users WHERE id = $1',
+      `SELECT u.household_id as user_household_uuid, h.household_id as external_household_id, h.family_name
+       FROM users u 
+       LEFT JOIN households h ON u.household_id::uuid = h.id 
+       WHERE u.id = $1`,
       [req.userId]
     );
 
-    if (!userResult.rows.length || !userResult.rows[0].household_id) {
+    if (!userResult.rows.length || !userResult.rows[0].external_household_id) {
       return res.json([]);
     }
 
-    const householdId = userResult.rows[0].household_id;
+    const externalHouseholdId = userResult.rows[0].external_household_id;
 
     let query = 'SELECT * FROM donations WHERE household_id = $1';
-    let params = [householdId];
+    let params = [externalHouseholdId];
 
     if (start_date && end_date) {
       query += ' AND donation_date BETWEEN $2 AND $3';

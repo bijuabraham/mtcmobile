@@ -48,12 +48,21 @@ router.get('/directory', authenticateAndRequireApproval, async (req, res) => {
 // Get user's own household
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const result = await db.query(
-      'SELECT * FROM households WHERE user_id = $1',
+    const userResult = await db.query(
+      'SELECT household_id FROM users WHERE id = $1',
       [req.userId]
     );
 
-    res.json(result.rows.length > 0 ? result.rows[0] : null);
+    if (!userResult.rows.length || !userResult.rows[0].household_id) {
+      return res.json(null);
+    }
+
+    const result = await db.query(
+      'SELECT * FROM households WHERE id = $1',
+      [userResult.rows[0].household_id]
+    );
+
+    res.json(result.rows.length > 0 ? keysToCamelCase(result.rows[0]) : null);
   } catch (error) {
     console.error('Get household error:', error);
     res.status(500).json({ error: 'Failed to get household' });
