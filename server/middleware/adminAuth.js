@@ -4,10 +4,6 @@ const AUTHORIZED_ADMIN_EMAIL = 'admin@marthomasf.org';
 
 async function requireAdmin(req, res, next) {
   try {
-    console.log('=== Admin Auth ===', req.path);
-    console.log('passport:', JSON.stringify(req.session?.passport));
-    console.log('adminUserId:', req.session?.adminUserId);
-    
     // Try to get user from passport first
     let userId = req.user?.dbUser?.id;
     
@@ -23,24 +19,18 @@ async function requireAdmin(req, res, next) {
     
     // Fallback 2: Try direct session admin user ID (backup storage)
     if (!userId && req.session?.adminUserId) {
-      console.log('Using backup adminUserId:', req.session.adminUserId);
       try {
         const userResult = await db.query("SELECT * FROM users WHERE id = $1", [req.session.adminUserId]);
-        console.log('DB query result rows:', userResult.rows.length);
         if (userResult.rows.length > 0) {
           req.user = { dbUser: userResult.rows[0] };
           userId = req.user.dbUser.id;
-          console.log('User loaded from backup, id:', userId);
-        } else {
-          console.log('No user found for adminUserId');
         }
       } catch (dbError) {
-        console.error('DB query error:', dbError);
+        console.error('Admin auth DB error:', dbError);
       }
     }
     
     if (!userId) {
-      console.log('Auth failed - no userId');
       return res.status(401).json({ error: 'Not authenticated. Please log in.' });
     }
 
