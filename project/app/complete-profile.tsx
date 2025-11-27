@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +13,18 @@ export default function CompleteProfileScreen() {
   const { user, completeProfile, signOut } = useAuth();
   const { config } = useChurchConfig();
   const router = useRouter();
+
+  useEffect(() => {
+    if (user?.firstName) {
+      setFirstName(user.firstName);
+    }
+    if (user?.lastName) {
+      setLastName(user.lastName);
+    }
+    if (user?.donorNumber) {
+      setDonorNumber(user.donorNumber);
+    }
+  }, [user]);
 
   const handleSubmit = async () => {
     if (!firstName.trim()) {
