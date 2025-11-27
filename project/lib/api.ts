@@ -113,6 +113,13 @@ class ApiClient {
   async getContacts() {
     return this.request('/contacts');
   }
+
+  async updateDonorNumber(donorNumber: string) {
+    return this.request('/auth/update-donor-number', {
+      method: 'PUT',
+      body: JSON.stringify({ donorNumber }),
+    });
+  }
 }
 
 export const api = new ApiClient();

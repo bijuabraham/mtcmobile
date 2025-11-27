@@ -6,7 +6,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ChurchConfigProvider } from '@/contexts/ChurchConfigContext';
 
 function RootLayoutNav() {
-  const { user, loading } = useAuth();
+  const { user, loading, needsProfileCompletion, isPendingApproval, isApproved, isSuspended } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -14,13 +14,24 @@ function RootLayoutNav() {
     if (loading) return;
 
     const inAuthGroup = segments[0] === '(tabs)';
+    const currentSegment = segments[0];
 
-    if (!user && inAuthGroup) {
-      router.replace('/login');
-    } else if (user && !inAuthGroup) {
-      router.replace('/(tabs)');
+    if (!user) {
+      if (inAuthGroup) {
+        router.replace('/login');
+      }
+    } else {
+      if (isSuspended && currentSegment !== 'account-suspended') {
+        router.replace('/account-suspended');
+      } else if (needsProfileCompletion && currentSegment !== 'complete-profile') {
+        router.replace('/complete-profile');
+      } else if (isPendingApproval && currentSegment !== 'pending-approval') {
+        router.replace('/pending-approval');
+      } else if (isApproved && !inAuthGroup) {
+        router.replace('/(tabs)');
+      }
     }
-  }, [user, segments, loading]);
+  }, [user, segments, loading, needsProfileCompletion, isPendingApproval, isApproved, isSuspended]);
 
   return (
     <Stack screenOptions={{ headerShown: false }}>

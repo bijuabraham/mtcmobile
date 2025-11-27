@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Switch, Image } from 'react-native';
-import { LogOut, User, Bell, Globe } from 'lucide-react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Switch, Image, TextInput, ActivityIndicator } from 'react-native';
+import { LogOut, User, Bell, Globe, Edit2, Check, X } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChurchConfig } from '@/contexts/ChurchConfigContext';
+import { api } from '@/lib/api';
 
 export default function SettingsScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [editingDonorNumber, setEditingDonorNumber] = useState(false);
+  const [newDonorNumber, setNewDonorNumber] = useState('');
+  const [savingDonorNumber, setSavingDonorNumber] = useState(false);
 
-  const { user, signOut } = useAuth();
+  const { user, signOut, checkAuth } = useAuth();
   const { config } = useChurchConfig();
 
   const primaryColor = config?.primaryColor || '#C41E3A';
@@ -27,6 +31,35 @@ export default function SettingsScreen() {
 
   const saveNotificationSettings = async (enabled: boolean) => {
     setNotificationsEnabled(enabled);
+  };
+
+  const handleEditDonorNumber = () => {
+    setNewDonorNumber(user?.donorNumber || '');
+    setEditingDonorNumber(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingDonorNumber(false);
+    setNewDonorNumber('');
+  };
+
+  const handleSaveDonorNumber = async () => {
+    if (!newDonorNumber.trim()) {
+      Alert.alert('Error', 'Please enter a donor number');
+      return;
+    }
+
+    setSavingDonorNumber(true);
+    try {
+      await api.updateDonorNumber(newDonorNumber.trim());
+      await checkAuth();
+      setEditingDonorNumber(false);
+      Alert.alert('Success', 'Donor number updated successfully');
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to update donor number');
+    } finally {
+      setSavingDonorNumber(false);
+    }
   };
 
   return (
@@ -50,12 +83,49 @@ export default function SettingsScreen() {
         </View>
         <View style={styles.card}>
           <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Name</Text>
+            <Text style={styles.infoValue}>
+              {user?.firstName && user?.lastName 
+                ? `${user.firstName} ${user.lastName}` 
+                : 'Not set'}
+            </Text>
+          </View>
+          <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Email</Text>
             <Text style={styles.infoValue}>{user?.email}</Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>User ID</Text>
-            <Text style={styles.infoValue}>{user?.id.substring(0, 8)}...</Text>
+          <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
+            <Text style={styles.infoLabel}>Donor Number</Text>
+            {editingDonorNumber ? (
+              <View style={styles.editRow}>
+                <TextInput
+                  style={styles.editInput}
+                  value={newDonorNumber}
+                  onChangeText={setNewDonorNumber}
+                  placeholder="Enter donor number"
+                  autoFocus
+                />
+                {savingDonorNumber ? (
+                  <ActivityIndicator size="small" color={primaryColor} />
+                ) : (
+                  <>
+                    <TouchableOpacity onPress={handleSaveDonorNumber} style={styles.editButton}>
+                      <Check size={20} color="#4CAF50" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleCancelEdit} style={styles.editButton}>
+                      <X size={20} color="#D32F2F" />
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            ) : (
+              <View style={styles.valueWithEdit}>
+                <Text style={styles.infoValue}>{user?.donorNumber || 'Not set'}</Text>
+                <TouchableOpacity onPress={handleEditDonorNumber} style={styles.editIconButton}>
+                  <Edit2 size={16} color={primaryColor} />
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -294,5 +364,33 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  editRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  editInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 14,
+    maxWidth: 150,
+  },
+  editButton: {
+    padding: 4,
+  },
+  valueWithEdit: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  editIconButton: {
+    padding: 4,
   },
 });

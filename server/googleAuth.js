@@ -381,6 +381,53 @@ async function setupAuth(app) {
     }
   });
 
+  app.put("/api/auth/update-donor-number", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.dbUser?.id;
+      const { donorNumber } = req.body;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      if (!donorNumber || !donorNumber.trim()) {
+        return res.status(400).json({ error: "Donor number is required" });
+      }
+
+      const result = await db.query(
+        `UPDATE users SET 
+          donor_number = $1, 
+          updated_at = NOW()
+         WHERE id = $2 
+         RETURNING id, email, first_name, last_name, donor_number, is_approved, profile_complete, is_admin`,
+        [donorNumber.trim(), userId]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const dbUser = result.rows[0];
+      req.user.dbUser = dbUser;
+      res.json({ 
+        success: true,
+        user: {
+          id: dbUser.id,
+          email: dbUser.email,
+          firstName: dbUser.first_name,
+          lastName: dbUser.last_name,
+          donorNumber: dbUser.donor_number,
+          isApproved: dbUser.is_approved,
+          profileComplete: dbUser.profile_complete,
+          isAdmin: dbUser.is_admin
+        }
+      });
+    } catch (error) {
+      console.error("Error updating donor number:", error);
+      res.status(500).json({ error: "Failed to update donor number" });
+    }
+  });
+
   console.log("✅ Google OAuth initialized");
 }
 
