@@ -9,6 +9,7 @@ interface User {
   donorNumber?: string;
   isApproved?: boolean;
   profileComplete?: boolean;
+  isSuspended?: boolean;
 }
 
 interface AuthContextType {
@@ -17,6 +18,7 @@ interface AuthContextType {
   needsProfileCompletion: boolean;
   isPendingApproval: boolean;
   isApproved: boolean;
+  isSuspended: boolean;
   checkAuth: () => Promise<void>;
   signOut: () => Promise<void>;
   completeProfile: (firstName: string, lastName: string, donorNumber: string) => Promise<void>;
@@ -71,6 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const needsProfileCompletion = user !== null && user.profileComplete === false;
   const isPendingApproval = user !== null && user.profileComplete === true && user.isApproved === false;
   const isApproved = user !== null && user.profileComplete === true && user.isApproved === true;
+  const isSuspended = user !== null && user.isSuspended === true;
 
   return (
     <AuthContext.Provider value={{ 
@@ -79,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       needsProfileCompletion,
       isPendingApproval,
       isApproved,
+      isSuspended,
       checkAuth,
       signOut,
       completeProfile,

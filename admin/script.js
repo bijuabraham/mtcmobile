@@ -868,21 +868,29 @@ async function loadAllUsers() {
           </thead>
           <tbody>
             ${users.map(user => `
-              <tr class="${user.isApproved ? 'approved' : (user.profileComplete ? 'pending' : 'incomplete')}">
+              <tr class="${user.isSuspended ? 'suspended' : (user.isApproved ? 'approved' : (user.profileComplete ? 'pending' : 'incomplete'))}">
                 <td>${user.firstName || ''} ${user.lastName || ''}</td>
                 <td>${user.email}</td>
                 <td>${user.donorNumber || '-'}</td>
                 <td>
-                  <span class="status-badge ${user.isApproved ? 'status-approved' : (user.profileComplete ? 'status-pending' : 'status-incomplete')}">
-                    ${user.isApproved ? 'Approved' : (user.profileComplete ? 'Pending' : 'Incomplete Profile')}
+                  <span class="status-badge ${user.isSuspended ? 'status-suspended' : (user.isApproved ? 'status-approved' : (user.profileComplete ? 'status-pending' : 'status-incomplete'))}">
+                    ${user.isSuspended ? 'Suspended' : (user.isApproved ? 'Active' : (user.profileComplete ? 'Pending' : 'Incomplete'))}
                   </span>
                 </td>
                 <td>${new Date(user.createdAt).toLocaleDateString()}</td>
-                <td>
-                  ${!user.isApproved && user.profileComplete ? `
-                    <button class="btn-approve-small" onclick="approveUser(${user.id})">Approve</button>
+                <td class="action-buttons">
+                  ${!user.isApproved && user.profileComplete && !user.isSuspended ? `
+                    <button class="btn-approve-small" onclick="approveUser('${user.id}')">Approve</button>
                   ` : ''}
-                  ${user.isApproved ? '<span style="color: #10b981;">Active</span>' : ''}
+                  ${user.isApproved && !user.isSuspended && !user.isAdmin ? `
+                    <button class="btn-suspend" onclick="suspendUser('${user.id}', '${user.email}')">Suspend</button>
+                  ` : ''}
+                  ${user.isSuspended ? `
+                    <button class="btn-restore" onclick="unsuspendUser('${user.id}', '${user.email}')">Restore</button>
+                  ` : ''}
+                  ${!user.isAdmin ? `
+                    <button class="btn-delete" onclick="deleteUser('${user.id}', '${user.email}')">Delete</button>
+                  ` : '<span style="color: #6b7280; font-size: 12px;">Admin</span>'}
                 </td>
               </tr>
             `).join('')}
@@ -955,6 +963,92 @@ async function rejectUser(userId) {
     loadAllUsers();
   } catch (error) {
     console.error('Error rejecting user:', error);
+    showNotification(error.message, 'error');
+  }
+}
+
+async function suspendUser(userId, email) {
+  if (!confirm(`Are you sure you want to suspend ${email}? They will not be able to access the app until you restore their access.`)) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${API_BASE}/admin/users/${userId}/suspend`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include'
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to suspend user');
+    }
+    
+    showNotification(result.message || 'User suspended successfully');
+    loadAllUsers();
+  } catch (error) {
+    console.error('Error suspending user:', error);
+    showNotification(error.message, 'error');
+  }
+}
+
+async function unsuspendUser(userId, email) {
+  if (!confirm(`Are you sure you want to restore access for ${email}?`)) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${API_BASE}/admin/users/${userId}/unsuspend`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include'
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to restore user access');
+    }
+    
+    showNotification(result.message || 'User access restored successfully');
+    loadAllUsers();
+  } catch (error) {
+    console.error('Error restoring user:', error);
+    showNotification(error.message, 'error');
+  }
+}
+
+async function deleteUser(userId, email) {
+  if (!confirm(`Are you sure you want to permanently delete ${email}? This action cannot be undone.`)) {
+    return;
+  }
+  
+  if (!confirm(`FINAL WARNING: This will permanently delete all data for ${email}. Are you absolutely sure?`)) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${API_BASE}/admin/users/${userId}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to delete user');
+    }
+    
+    showNotification(result.message || 'User deleted successfully');
+    loadPendingUsers();
+    loadAllUsers();
+  } catch (error) {
+    console.error('Error deleting user:', error);
     showNotification(error.message, 'error');
   }
 }

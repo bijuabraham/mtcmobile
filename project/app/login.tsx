@@ -9,13 +9,15 @@ import * as Linking from 'expo-linking';
 export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { user, checkAuth, getLoginUrl, needsProfileCompletion, isPendingApproval, isApproved } = useAuth();
+  const { user, checkAuth, getLoginUrl, needsProfileCompletion, isPendingApproval, isApproved, isSuspended } = useAuth();
   const { config } = useChurchConfig();
   const router = useRouter();
 
   useEffect(() => {
     if (user) {
-      if (needsProfileCompletion) {
+      if (isSuspended) {
+        router.replace('/account-suspended');
+      } else if (needsProfileCompletion) {
         router.replace('/complete-profile');
       } else if (isPendingApproval) {
         router.replace('/pending-approval');
@@ -23,7 +25,7 @@ export default function LoginScreen() {
         router.replace('/(tabs)');
       }
     }
-  }, [user, needsProfileCompletion, isPendingApproval, isApproved, router]);
+  }, [user, needsProfileCompletion, isPendingApproval, isApproved, isSuspended, router]);
 
   const handleGoogleLogin = async () => {
     setLoading(true);

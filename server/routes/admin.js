@@ -679,7 +679,7 @@ router.get('/users', async (req, res) => {
   try {
     const result = await db.query(
       `SELECT id, email, first_name, last_name, donor_number, is_admin, is_approved, profile_complete, 
-              household_id, created_at, approved_at 
+              is_suspended, suspended_at, household_id, created_at, approved_at 
        FROM users ORDER BY email ASC`
     );
     
@@ -811,6 +811,119 @@ router.put('/users/:id/admin', async (req, res) => {
   } catch (error) {
     console.error('Error updating admin status:', error);
     res.status(500).json({ error: 'Failed to update admin status' });
+  }
+});
+
+router.delete('/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const checkResult = await db.query('SELECT id, email, is_admin FROM users WHERE id = $1', [id]);
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const user = checkResult.rows[0];
+    
+    if (user.is_admin) {
+      const adminCountResult = await db.query('SELECT COUNT(*) as count FROM users WHERE is_admin = true');
+      const adminCount = parseInt(adminCountResult.rows[0].count);
+      
+      if (adminCount <= 1) {
+        return res.status(400).json({ error: 'Cannot delete the last admin. At least one admin must remain.' });
+      }
+    }
+    
+    await db.query('DELETE FROM users WHERE id = $1', [id]);
+    
+    res.json({ 
+      success: true, 
+      message: `User ${user.email} has been permanently deleted`
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
+router.put('/users/:id/suspend', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const adminId = req.adminId;
+    
+    const checkResult = await db.query('SELECT id, email, is_admin, is_suspended FROM users WHERE id = $1', [id]);
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const user = checkResult.rows[0];
+    
+    if (user.is_admin) {
+      return res.status(400).json({ error: 'Cannot suspend an admin user. Remove admin privileges first.' });
+    }
+    
+    if (user.is_suspended) {
+      return res.status(400).json({ error: 'User is already suspended' });
+    }
+    
+    const result = await db.query(
+      `UPDATE users SET 
+         is_suspended = TRUE, 
+         suspended_at = NOW(), 
+         suspended_by = $1,
+         updated_at = NOW() 
+       WHERE id = $2 
+       RETURNING id, email, first_name, last_name, is_suspended, suspended_at`,
+      [adminId, id]
+    );
+    
+    const updatedUser = keysToCamelCase(result.rows[0]);
+    res.json({ 
+      success: true, 
+      user: updatedUser,
+      message: `User ${updatedUser.email} has been suspended`
+    });
+  } catch (error) {
+    console.error('Error suspending user:', error);
+    res.status(500).json({ error: 'Failed to suspend user' });
+  }
+});
+
+router.put('/users/:id/unsuspend', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const checkResult = await db.query('SELECT id, email, is_suspended FROM users WHERE id = $1', [id]);
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const user = checkResult.rows[0];
+    
+    if (!user.is_suspended) {
+      return res.status(400).json({ error: 'User is not suspended' });
+    }
+    
+    const result = await db.query(
+      `UPDATE users SET 
+         is_suspended = FALSE, 
+         suspended_at = NULL, 
+         suspended_by = NULL,
+         updated_at = NOW() 
+       WHERE id = $1 
+       RETURNING id, email, first_name, last_name, is_suspended`,
+      [id]
+    );
+    
+    const updatedUser = keysToCamelCase(result.rows[0]);
+    res.json({ 
+      success: true, 
+      user: updatedUser,
+      message: `User ${updatedUser.email} access has been restored`
+    });
+  } catch (error) {
+    console.error('Error unsuspending user:', error);
+    res.status(500).json({ error: 'Failed to restore user access' });
   }
 });
 

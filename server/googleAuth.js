@@ -215,7 +215,7 @@ async function setupAuth(app) {
 
     try {
       const dbUser = await db.query(
-        "SELECT id, email, first_name, last_name, donor_number, is_approved, profile_complete, profile_image_url, is_admin FROM users WHERE id = $1",
+        "SELECT id, email, first_name, last_name, donor_number, is_approved, profile_complete, profile_image_url, is_admin, is_suspended FROM users WHERE id = $1",
         [req.user.dbUser?.id]
       );
 
@@ -237,7 +237,7 @@ async function setupAuth(app) {
 
     try {
       const dbUser = await db.query(
-        "SELECT id, email, first_name, last_name, donor_number, is_approved, profile_complete, profile_image_url, is_admin FROM users WHERE id = $1",
+        "SELECT id, email, first_name, last_name, donor_number, is_approved, profile_complete, profile_image_url, is_admin, is_suspended FROM users WHERE id = $1",
         [req.user.dbUser?.id]
       );
 
@@ -256,7 +256,8 @@ async function setupAuth(app) {
           isApproved: user.is_approved,
           profileComplete: user.profile_complete,
           profileImageUrl: user.profile_image_url,
-          isAdmin: user.is_admin
+          isAdmin: user.is_admin,
+          isSuspended: user.is_suspended
         }
       });
     } catch (error) {
@@ -397,7 +398,7 @@ const isApproved = async (req, res, next) => {
 
   try {
     const result = await db.query(
-      "SELECT is_approved, profile_complete FROM users WHERE id = $1",
+      "SELECT is_approved, profile_complete, is_suspended FROM users WHERE id = $1",
       [req.user.dbUser?.id]
     );
 
@@ -406,6 +407,13 @@ const isApproved = async (req, res, next) => {
     }
 
     const user = result.rows[0];
+
+    if (user.is_suspended) {
+      return res.status(403).json({ 
+        error: "Your account has been suspended. Please contact the administrator at admin@marthomasf.org", 
+        code: "ACCOUNT_SUSPENDED" 
+      });
+    }
 
     if (!user.profile_complete) {
       return res.status(403).json({ error: "Profile not complete", code: "PROFILE_INCOMPLETE" });

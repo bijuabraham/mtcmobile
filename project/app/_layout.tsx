@@ -25,6 +25,9 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="login" />
+      <Stack.Screen name="complete-profile" />
+      <Stack.Screen name="pending-approval" />
+      <Stack.Screen name="account-suspended" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="+not-found" />
     </Stack>

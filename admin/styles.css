@@ -548,9 +548,79 @@ header h1 {
   color: #6b7280;
 }
 
+.status-suspended {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .loading-message {
   text-align: center;
   padding: 40px;
   color: #888;
   font-size: 16px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-suspend {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-suspend:hover {
+  background: #d97706;
+  transform: translateY(-1px);
+}
+
+.btn-restore {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-restore:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.btn-delete {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-delete:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.users-table tr.suspended {
+  background-color: #fef2f2;
+}
+
+.users-table tr.suspended:hover {
+  background-color: #fee2e2;
 }
