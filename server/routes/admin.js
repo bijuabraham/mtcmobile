@@ -1011,12 +1011,45 @@ router.post('/upload/area-mapping', upload.single('file'), async (req, res) => {
     householdFirstNameIndex = 44;
     householdLastNameIndex = 45;
 
-    // Build a map of household family names to household IDs from the database
+    // Build maps for matching households from the database
     const householdsResult = await db.query('SELECT household_id, family_name FROM households');
     const householdsByName = {};
+    const householdsById = {};
     for (const h of householdsResult.rows) {
       const normalizedName = h.family_name.toLowerCase().replace(/\s+/g, ' ').trim();
       householdsByName[normalizedName] = h.household_id;
+      householdsById[String(h.household_id)] = h.household_id;
+    }
+
+    // Helper function to try matching a household by various name formats
+    function findHouseholdId(firstName, lastName, recordId) {
+      // Try direct match with Household Record ID first
+      if (recordId && householdsById[String(recordId)]) {
+        return householdsById[String(recordId)];
+      }
+      
+      // Try "FirstName LastName" format (e.g., "Aakash & Sidhima Jacob")
+      const format1 = `${firstName} ${lastName}`.toLowerCase().replace(/\s+/g, ' ').trim();
+      if (householdsByName[format1]) return householdsByName[format1];
+      
+      // Try "LastName, FirstName" format reversed (if firstName contains comma)
+      if (firstName && firstName.includes(',')) {
+        const parts = firstName.split(',').map(p => p.trim());
+        if (parts.length === 2) {
+          const format2 = `${parts[1]} ${parts[0]}`.toLowerCase().replace(/\s+/g, ' ').trim();
+          if (householdsByName[format2]) return householdsByName[format2];
+        }
+      }
+      
+      // Try just lastName as family name
+      const format3 = lastName.toLowerCase().replace(/\s+/g, ' ').trim();
+      if (householdsByName[format3]) return householdsByName[format3];
+      
+      // Try just firstName as family name
+      const format4 = firstName.toLowerCase().replace(/\s+/g, ' ').trim();
+      if (householdsByName[format4]) return householdsByName[format4];
+      
+      return null;
     }
 
     let updated = 0;
@@ -1032,22 +1065,23 @@ router.post('/upload/area-mapping', upload.single('file'), async (req, res) => {
       if (!row || row.every(cell => !cell)) continue;
 
       const area = row[areaIndex] ? String(row[areaIndex]).trim() : null;
-      const householdFirstName = row[householdFirstNameIndex] ? String(row[householdFirstNameIndex]).trim() : null;
-      const householdLastName = row[householdLastNameIndex] ? String(row[householdLastNameIndex]).trim() : null;
+      const householdFirstName = row[householdFirstNameIndex] ? String(row[householdFirstNameIndex]).trim() : '';
+      const householdLastName = row[householdLastNameIndex] ? String(row[householdLastNameIndex]).trim() : '';
+      const householdRecordId = householdRecordIdIndex >= 0 && row[householdRecordIdIndex] ? String(row[householdRecordIdIndex]).trim() : null;
 
-      if (!area || !householdFirstName || !householdLastName) {
-        continue; // Skip rows without required data
+      if (!area) {
+        continue; // Skip rows without area data
       }
 
-      // Build family name in same format as stored (e.g., "Aakash & Sidhima Jacob")
-      const familyName = `${householdFirstName} ${householdLastName}`;
-      const normalizedFamilyName = familyName.toLowerCase().replace(/\s+/g, ' ').trim();
-
+      // Create a unique key for this household
+      const uniqueKey = householdRecordId || `${householdFirstName}|${householdLastName}`.toLowerCase();
+      
       // Skip if we already processed this household
-      if (processedHouseholds.has(normalizedFamilyName)) continue;
-      processedHouseholds.add(normalizedFamilyName);
+      if (processedHouseholds.has(uniqueKey)) continue;
+      processedHouseholds.add(uniqueKey);
 
-      const householdId = householdsByName[normalizedFamilyName];
+      const householdId = findHouseholdId(householdFirstName, householdLastName, householdRecordId);
+      const displayName = householdRecordId || `${householdFirstName} ${householdLastName}`.trim();
 
       if (householdId) {
         try {
@@ -1057,12 +1091,12 @@ router.post('/upload/area-mapping', upload.single('file'), async (req, res) => {
           );
           updated++;
         } catch (err) {
-          skippedRows.push({ row: rowNum, reason: err.message, familyName });
+          skippedRows.push({ row: rowNum, reason: err.message, identifier: displayName });
         }
       } else {
         notFound++;
         if (notFound <= 20) { // Only track first 20 not found for debugging
-          skippedRows.push({ row: rowNum, reason: 'Household not found', familyName });
+          skippedRows.push({ row: rowNum, reason: 'Household not found', identifier: displayName });
         }
       }
     }
@@ -1075,7 +1109,7 @@ router.post('/upload/area-mapping', upload.single('file'), async (req, res) => {
       total: processedHouseholds.size,
       skippedDetails: skippedRows.slice(0, 50),
       hasMoreSkipped: skippedRows.length > 50,
-      message: `Step 2 complete: Updated ${updated} households with area/prayer group. ${notFound} households not found. Please proceed to upload Donor Mapping file.`
+      message: `Step 2 complete: Updated ${updated} households with area/prayer group.${notFound > 0 ? ` ${notFound} households not matched (may have different name format).` : ''} Please proceed to upload Donor Mapping file.`
     });
   } catch (error) {
     console.error('Upload area mapping error:', error);
