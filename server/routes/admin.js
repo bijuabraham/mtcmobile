@@ -724,12 +724,12 @@ router.put('/users/:id/approve', async (req, res) => {
     
     if (userDonorNumber) {
       const householdResult = await db.query(
-        'SELECT id, family_name FROM households WHERE donor_id = $1',
+        'SELECT household_id, family_name FROM households WHERE donor_id = $1',
         [userDonorNumber]
       );
       
       if (householdResult.rows.length > 0) {
-        householdId = householdResult.rows[0].id;
+        householdId = householdResult.rows[0].household_id;
         householdMessage = ` and linked to household "${householdResult.rows[0].family_name}"`;
       } else {
         householdMessage = ' (no matching household found for donor number)';

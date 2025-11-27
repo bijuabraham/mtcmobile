@@ -58,7 +58,7 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 
     const result = await db.query(
-      'SELECT * FROM households WHERE id = $1',
+      'SELECT * FROM households WHERE household_id = $1',
       [userResult.rows[0].household_id]
     );
 
