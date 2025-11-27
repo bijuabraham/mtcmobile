@@ -2,6 +2,7 @@ const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const session = require("express-session");
 const connectPg = require("connect-pg-simple");
+const cookieParser = require("cookie-parser");
 const db = require("./db");
 
 const AUTHORIZED_ADMIN_EMAIL = 'admin@marthomasf.org';
@@ -99,6 +100,7 @@ async function upsertUser(profile) {
 
 async function setupAuth(app) {
   app.set("trust proxy", 1);
+  app.use(cookieParser());
   app.use(getSession());
   app.use(passport.initialize());
   app.use(passport.session());
@@ -153,27 +155,28 @@ async function setupAuth(app) {
   });
 
   app.get("/api/auth/login", (req, res, next) => {
-    req.session.loginType = 'user';
-    req.session.save((err) => {
-      if (err) console.error("Session save error:", err);
-      passport.authenticate("google", {
-        scope: ["profile", "email"],
-        prompt: "select_account"
-      })(req, res, next);
-    });
+    res.cookie('login_type', 'user', { httpOnly: true, maxAge: 5 * 60 * 1000 });
+    passport.authenticate("google", {
+      scope: ["profile", "email"],
+      prompt: "select_account"
+    })(req, res, next);
   });
 
   app.get("/api/auth/google/callback", 
     passport.authenticate("google", { 
-      failureRedirect: "/login?error=auth_failed",
-      failWithError: true
+      failureRedirect: "/login?error=auth_failed"
     }),
     async (req, res) => {
-      const loginType = req.session?.loginType || 'user';
+      const loginType = req.cookies?.login_type || 'user';
       const email = req.user?.dbUser?.email?.toLowerCase();
+      
+      res.clearCookie('login_type');
+      
+      console.log(`OAuth callback - loginType: ${loginType}, email: ${email}`);
       
       if (loginType === 'admin') {
         if (email !== AUTHORIZED_ADMIN_EMAIL.toLowerCase()) {
+          console.log(`Admin login rejected - email ${email} is not authorized`);
           req.logout(() => {
             req.session.destroy(() => {
               res.redirect("/admin/login.html?error=unauthorized");
@@ -181,10 +184,10 @@ async function setupAuth(app) {
           });
           return;
         }
-        delete req.session.loginType;
+        console.log(`Admin login successful for ${email}`);
         res.redirect("/admin/index.html");
       } else {
-        delete req.session.loginType;
+        console.log(`User login for ${email}`);
         res.redirect("/");
       }
     }
@@ -278,14 +281,11 @@ async function setupAuth(app) {
   });
 
   app.get("/api/admin/auth/login", (req, res, next) => {
-    req.session.loginType = 'admin';
-    req.session.save((err) => {
-      if (err) console.error("Session save error:", err);
-      passport.authenticate("google", {
-        scope: ["profile", "email"],
-        prompt: "select_account"
-      })(req, res, next);
-    });
+    res.cookie('login_type', 'admin', { httpOnly: true, maxAge: 5 * 60 * 1000 });
+    passport.authenticate("google", {
+      scope: ["profile", "email"],
+      prompt: "select_account"
+    })(req, res, next);
   });
 
   app.get("/api/admin/auth/check", async (req, res) => {
