@@ -408,8 +408,12 @@ router.post('/upload/households', upload.single('file'), async (req, res) => {
     // Clear existing data before importing
     // First, unlink users from households to prevent cascade to users table
     await db.query('UPDATE users SET household_id = NULL');
-    await db.query('TRUNCATE TABLE members RESTART IDENTITY');
-    await db.query('TRUNCATE TABLE households RESTART IDENTITY');
+    // Use DELETE instead of TRUNCATE to respect foreign key constraints
+    await db.query('DELETE FROM members');
+    await db.query('DELETE FROM households');
+    // Reset sequences for auto-increment IDs
+    await db.query('ALTER SEQUENCE IF EXISTS members_id_seq RESTART WITH 1');
+    await db.query('ALTER SEQUENCE IF EXISTS households_id_seq RESTART WITH 1');
 
     let inserted = 0;
     let updated = 0;
@@ -811,8 +815,12 @@ router.post('/upload/church-directory', upload.single('file'), async (req, res) 
     // Clear existing data before importing
     // First, unlink users from households to prevent cascade to users table
     await db.query('UPDATE users SET household_id = NULL');
-    await db.query('TRUNCATE TABLE members RESTART IDENTITY');
-    await db.query('TRUNCATE TABLE households RESTART IDENTITY');
+    // Use DELETE instead of TRUNCATE to respect foreign key constraints
+    await db.query('DELETE FROM members');
+    await db.query('DELETE FROM households');
+    // Reset sequences for auto-increment IDs
+    await db.query('ALTER SEQUENCE IF EXISTS members_id_seq RESTART WITH 1');
+    await db.query('ALTER SEQUENCE IF EXISTS households_id_seq RESTART WITH 1');
 
     let householdsInserted = 0;
     let membersInserted = 0;
