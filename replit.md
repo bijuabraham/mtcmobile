@@ -11,6 +11,10 @@ Preferred communication style: Simple, everyday language.
 - **Admin Approval Workflow**: New users must be approved by an administrator before accessing church data
 - **User Approvals Tab**: Added to admin panel for reviewing and approving/rejecting pending users
 - **Server-side Authorization**: Protected routes (directory, members, donations) now enforce approval status at the API level
+- **User Management Features**: Admin panel now includes:
+  - Delete user functionality (cannot delete admin users)
+  - Suspend/unsuspend user functionality with audit trail (suspended_at, suspended_by)
+  - Suspended users are blocked from accessing protected data and see a dedicated "Account Suspended" screen with contact information
 
 ## System Architecture
 
