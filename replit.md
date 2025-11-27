@@ -6,30 +6,52 @@ This white-label church management mobile application, built with React Native a
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes (Nov 2025)
+- **Authentication Migration**: Migrated from email/password to Google OAuth using Replit Auth
+- **Admin Approval Workflow**: New users must be approved by an administrator before accessing church data
+- **User Approvals Tab**: Added to admin panel for reviewing and approving/rejecting pending users
+- **Server-side Authorization**: Protected routes (directory, members, donations) now enforce approval status at the API level
+
 ## System Architecture
 
 ### Frontend
 - **Framework**: React Native with Expo SDK 54, utilizing Expo Router for file-based, tab-based navigation.
-- **State Management**: React Context API for global state, including `AuthContext` (JWT-based) and `ChurchConfigContext` for dynamic, database-driven branding.
+- **State Management**: React Context API for global state, including `AuthContext` (session-based with Google OAuth) and `ChurchConfigContext` for dynamic, database-driven branding.
 - **UI/Styling**: React Native StyleSheet with dynamic theming based on church configuration. Uses Lucide React Native for iconography and RenderHTML for rich text. Custom components are used throughout without external UI libraries.
 
 ### Backend
 - **Database**: Replit PostgreSQL, managed via environment variables.
-- **Server**: Node.js with Express (port 3000), providing RESTful API endpoints for all application data.
-- **Authentication**: Custom JWT-based system with email/password (bcrypt hashing) for secure session management. Includes email verification via Replit Mail - users must verify their email address before logging in. Password reset functionality allows users to request a password reset link via email (1-hour expiration).
-- **Data Models**: Key tables include `users`, `church_configurations` (singleton with contact info fields), `households`, `members`, `donations`, `announcements`, and `contact_us`.
-- **Admin Panel**: A separate web-based admin panel (`/admin/login.html`) allows church configuration, contact us configuration (vicar info, church address, executive board), announcement management, bulk data uploads (members, households, donations, prayer groups with IconCMO format auto-detection), and admin user management with role-based access control.
-- **Contact Us Configuration**: The church_configurations table includes fields for vicar information (name, photo URL, phone, email), church address, and executive board members (stored as JSONB array with 8 positions: Vice President, Secretary, Treasurer - Cash, Treasurer - Accounts, Lay Leader Malayalam, Lay Leader English, Mandalam Member, Assembly Members). Each board member can have name, phone, and email.
+- **Server**: Node.js with Express (unified server on port 5000), providing RESTful API endpoints for all application data.
+- **Authentication**: Hybrid authentication system:
+  - **Google OAuth (Primary)**: Uses Replit Auth with session-based storage (PostgreSQL-backed via connect-pg-simple)
+  - **Manual Admin Approval**: New users complete profile (First Name, Last Name, Donor Number) and wait for administrator approval
+  - **Legacy JWT Auth**: Preserved for backward compatibility, extended to check approval status
+- **Authorization Middleware**: `authenticateAndRequireApproval` middleware enforces both authentication and approval status on protected routes
+- **Data Models**: Key tables include `users` (with google_id, profile_complete, is_approved, approved_at, approved_by fields), `church_configurations`, `households`, `members`, `donations`, `announcements`, and `contact_us`.
+- **Admin Panel**: A separate web-based admin panel (`/admin/login.html`) with tabs for:
+  - Church Configuration (branding, contact info)
+  - Announcement Management
+  - Data Uploads (members, households, donations, prayer groups)
+  - Admin User Management
+  - **User Approvals** (new) - review pending users, approve/reject with full audit trail
+- **Contact Us Configuration**: The church_configurations table includes fields for vicar information (name, photo URL, phone, email), church address, and executive board members (stored as JSONB array with 8 positions).
 
 ### White-Label Configuration
 - **Database-Driven Branding**: A single `church_configurations` table stores all branding and configuration settings (e.g., name, colors, logo, API endpoints). This enables a single codebase to serve multiple churches without code changes for new deployments.
 
+### Authentication Flow (Updated)
+1. **Google Sign-In**: User taps "Sign in with Google" button, opens OAuth flow via expo-web-browser
+2. **Profile Completion**: First-time users provide First Name, Last Name, and Donor Number
+3. **Pending Approval**: User sees "waiting for approval" screen
+4. **Admin Approval**: Administrator reviews pending users in admin panel, approves or rejects
+5. **Access Granted**: Approved users can access all church data (directory, donations, etc.)
+
 ### Data Flow
-- **Authentication**: Users sign up and receive a verification email. After verifying their email address, they can log in to receive a JWT token, stored in AsyncStorage, and used for subsequent API requests.
-- **Email Verification**: New users receive a verification email with a secure 24-hour token. Users cannot log in until their email is verified.
-- **Password Reset**: Users can request a password reset link via the "Forgot Password?" link on the login screen. They receive an email with a secure 1-hour token that allows them to set a new password via a web-based form.
-- **Directory Privacy**: Only users whose email address exists in the members table can view the directory. This ensures only registered church members have access.
-- **Data Fetching**: An API client (`project/lib/api.ts`) handles all backend communication, managing loading states and error handling.
+- **Session-Based Auth**: Google OAuth callback creates session stored in PostgreSQL
+- **Profile Completion**: POST to `/api/auth/complete-profile` with firstName, lastName, donorNumber
+- **Authorization Check**: API routes check both `profile_complete` and `is_approved` flags before granting access
+- **Directory Privacy**: Only approved users can view the directory (enforced at API level with proper error codes)
+- **Data Fetching**: An API client (`project/lib/api.ts`) handles all backend communication with session credentials
 - **Donation Tracking**: Donations are linked to `households` rather than individual users, allowing family-based tracking.
 
 ## External Dependencies
