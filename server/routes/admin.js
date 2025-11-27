@@ -946,4 +946,57 @@ router.put('/users/:id/unsuspend', async (req, res) => {
   }
 });
 
+router.put('/users/:id/donor-number', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { donorNumber } = req.body;
+    
+    if (!donorNumber || typeof donorNumber !== 'string') {
+      return res.status(400).json({ error: 'Donor number is required' });
+    }
+    
+    const checkResult = await db.query('SELECT id, email, donor_number FROM users WHERE id = $1', [id]);
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const trimmedDonorNumber = donorNumber.trim();
+    
+    let householdId = null;
+    let householdMessage = '';
+    
+    const householdResult = await db.query(
+      'SELECT household_id, family_name FROM households WHERE donor_id = $1',
+      [trimmedDonorNumber]
+    );
+    
+    if (householdResult.rows.length > 0) {
+      householdId = householdResult.rows[0].household_id;
+      householdMessage = ` and linked to household "${householdResult.rows[0].family_name}"`;
+    } else {
+      householdMessage = ' (no matching household found)';
+    }
+    
+    const result = await db.query(
+      `UPDATE users SET 
+         donor_number = $1, 
+         household_id = COALESCE($2, household_id),
+         updated_at = NOW() 
+       WHERE id = $3 
+       RETURNING id, email, first_name, last_name, donor_number, household_id`,
+      [trimmedDonorNumber, householdId, id]
+    );
+    
+    const updatedUser = keysToCamelCase(result.rows[0]);
+    res.json({ 
+      success: true, 
+      user: updatedUser,
+      message: `Donor number updated to ${trimmedDonorNumber}${householdMessage}`
+    });
+  } catch (error) {
+    console.error('Error updating donor number:', error);
+    res.status(500).json({ error: 'Failed to update donor number' });
+  }
+});
+
 module.exports = router;

@@ -15,9 +15,10 @@ Preferred communication style: Simple, everyday language.
   - Delete user functionality (cannot delete admin users)
   - Suspend/unsuspend user functionality with audit trail (suspended_at, suspended_by)
   - Suspended users are blocked from accessing protected data and see a dedicated "Account Suspended" screen with contact information
+  - **Edit Donor Number**: Admins can now edit any user's donor number directly from the User Approvals tab (pencil icon next to donor number)
 - **Profile Completion Redirect Fix**: Root layout now properly redirects new users to complete-profile screen based on authentication state priority (suspended > incomplete profile > pending approval > approved)
-- **Donor Number in Settings**: Users can now view and edit their Donor Number in the Settings page with inline editing
-- **Household Linking on Approval**: When admin approves a user, the system automatically links them to their household by matching user's donor_number with household's donor_id
+- **Donor Number Read-Only for Users**: Users can view their Donor Number in Settings but cannot edit it; only admins can modify donor numbers
+- **Household Linking on Approval/Donor Update**: When admin approves a user or updates their donor number, the system automatically links them to their household by matching user's donor_number with household's donor_id
 
 ## System Architecture
 

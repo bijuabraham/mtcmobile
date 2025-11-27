@@ -883,7 +883,12 @@ async function loadAllUsers() {
               <tr class="${user.isSuspended ? 'suspended' : (user.isApproved ? 'approved' : (user.profileComplete ? 'pending' : 'incomplete'))}">
                 <td>${user.firstName || ''} ${user.lastName || ''}</td>
                 <td>${user.email}</td>
-                <td>${user.donorNumber || '-'}</td>
+                <td>
+                  <span id="donor-display-${user.id}">${user.donorNumber || '-'}</span>
+                  <button class="btn-edit-donor" onclick="editDonorNumber('${user.id}', '${user.donorNumber || ''}')" title="Edit Donor Number">
+                    &#9998;
+                  </button>
+                </td>
                 <td>
                   <span class="status-badge ${user.isSuspended ? 'status-suspended' : (user.isApproved ? 'status-approved' : (user.profileComplete ? 'status-pending' : 'status-incomplete'))}">
                     ${user.isSuspended ? 'Suspended' : (user.isApproved ? 'Active' : (user.profileComplete ? 'Pending' : 'Incomplete'))}
@@ -1061,6 +1066,42 @@ async function deleteUser(userId, email) {
     loadAllUsers();
   } catch (error) {
     console.error('Error deleting user:', error);
+    showNotification(error.message, 'error');
+  }
+}
+
+async function editDonorNumber(userId, currentDonorNumber) {
+  const newDonorNumber = prompt('Enter new donor number:', currentDonorNumber);
+  
+  if (newDonorNumber === null) {
+    return;
+  }
+  
+  if (!newDonorNumber.trim()) {
+    showNotification('Donor number cannot be empty', 'error');
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${API_BASE}/admin/users/${userId}/donor-number`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify({ donorNumber: newDonorNumber.trim() })
+    });
+    
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to update donor number');
+    }
+    
+    showNotification(result.message || 'Donor number updated successfully');
+    loadAllUsers();
+  } catch (error) {
+    console.error('Error updating donor number:', error);
     showNotification(error.message, 'error');
   }
 }
