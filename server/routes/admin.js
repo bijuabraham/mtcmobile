@@ -405,8 +405,11 @@ router.post('/upload/households', upload.single('file'), async (req, res) => {
       }
     }
 
-    // Clear existing households data before importing (CASCADE will also clear members)
-    await db.query('TRUNCATE TABLE households RESTART IDENTITY CASCADE');
+    // Clear existing data before importing
+    // First, unlink users from households to prevent cascade to users table
+    await db.query('UPDATE users SET household_id = NULL');
+    await db.query('TRUNCATE TABLE members RESTART IDENTITY');
+    await db.query('TRUNCATE TABLE households RESTART IDENTITY');
 
     let inserted = 0;
     let updated = 0;
@@ -806,8 +809,10 @@ router.post('/upload/church-directory', upload.single('file'), async (req, res) 
     }
 
     // Clear existing data before importing
-    await db.query('TRUNCATE TABLE members RESTART IDENTITY CASCADE');
-    await db.query('TRUNCATE TABLE households RESTART IDENTITY CASCADE');
+    // First, unlink users from households to prevent cascade to users table
+    await db.query('UPDATE users SET household_id = NULL');
+    await db.query('TRUNCATE TABLE members RESTART IDENTITY');
+    await db.query('TRUNCATE TABLE households RESTART IDENTITY');
 
     let householdsInserted = 0;
     let membersInserted = 0;
