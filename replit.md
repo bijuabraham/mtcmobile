@@ -15,6 +15,8 @@ Preferred communication style: Simple, everyday language.
   - Delete user functionality (cannot delete admin users)
   - Suspend/unsuspend user functionality with audit trail (suspended_at, suspended_by)
   - Suspended users are blocked from accessing protected data and see a dedicated "Account Suspended" screen with contact information
+- **Profile Completion Redirect Fix**: Root layout now properly redirects new users to complete-profile screen based on authentication state priority (suspended > incomplete profile > pending approval > approved)
+- **Donor Number in Settings**: Users can now view and edit their Donor Number in the Settings page with inline editing
 
 ## System Architecture
 
