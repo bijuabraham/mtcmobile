@@ -959,7 +959,7 @@ router.post('/upload/church-directory', upload.single('file'), async (req, res) 
 });
 
 // Step 2: Upload Area Mapping (GroupsH.xls)
-// Updates households with prayer group/area assignments
+// Updates households with prayer group/area assignments using Household Record ID only
 router.post('/upload/area-mapping', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
@@ -975,82 +975,24 @@ router.post('/upload/area-mapping', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'Excel file is empty' });
     }
 
-    // Based on GroupsH.xls structure:
-    // Column 7 (index 7) = Area name (e.g., "Central Valley", "Tri-Valley")
-    // Need to find household identifier - looking at the data, column 44 has "Aakash & Sidhima" and column 47 has "Jacob"
-    // Actually, looking closer at the structure:
-    // - Column with "Household First Name" and "Household Last Name" to match households
-    // - Or use the household record ID if present
-
-    // The GroupsH format has member-level data with household info
-    // Let's find the area and household columns dynamically
-
+    // GroupsH.xls structure (based on actual file analysis):
+    // Column 7 (grpName) = Area/Prayer Group name (e.g., "Central Valley")
+    // Column 10 (Household Record ID) = The linking key to households table
     const headers = rawData[0] || [];
     
-    // Find relevant column indices by examining the data structure
-    // Based on sample: Area is around column 7, Household name info around columns 44-47
-    let areaIndex = -1;
-    let householdFirstNameIndex = -1;
-    let householdLastNameIndex = -1;
-    let householdRecordIdIndex = -1;
-
-    // Search for column headers or patterns
+    // Find column indices dynamically from headers
+    let areaIndex = 7;  // Default: grpName column
+    let householdIdIndex = 10;  // Default: Household Record ID column
+    
     for (let i = 0; i < headers.length; i++) {
       const header = String(headers[i] || '').toLowerCase();
-      if (header.includes('household first name')) householdFirstNameIndex = i;
-      if (header.includes('household last name')) householdLastNameIndex = i;
-      if (header.includes('household record id')) householdRecordIdIndex = i;
+      if (header === 'grpname' || header === 'grp name') areaIndex = i;
+      if (header.includes('household record id')) householdIdIndex = i;
     }
 
-    // GroupsH doesn't have clear headers, so use fixed positions based on the export format
-    // From the sample data analysis:
-    // Index 7 = Area name (e.g., "Central Valley")
-    // Index 44 = Household First Name (e.g., "Aakash & Sidhima") 
-    // Index 45 = Household Last Name (e.g., "Jacob")
-    areaIndex = 7;
-    householdFirstNameIndex = 44;
-    householdLastNameIndex = 45;
-
-    // Build maps for matching households from the database
-    const householdsResult = await db.query('SELECT household_id, family_name FROM households');
-    const householdsByName = {};
-    const householdsById = {};
-    for (const h of householdsResult.rows) {
-      const normalizedName = h.family_name.toLowerCase().replace(/\s+/g, ' ').trim();
-      householdsByName[normalizedName] = h.household_id;
-      householdsById[String(h.household_id)] = h.household_id;
-    }
-
-    // Helper function to try matching a household by various name formats
-    function findHouseholdId(firstName, lastName, recordId) {
-      // Try direct match with Household Record ID first
-      if (recordId && householdsById[String(recordId)]) {
-        return householdsById[String(recordId)];
-      }
-      
-      // Try "FirstName LastName" format (e.g., "Aakash & Sidhima Jacob")
-      const format1 = `${firstName} ${lastName}`.toLowerCase().replace(/\s+/g, ' ').trim();
-      if (householdsByName[format1]) return householdsByName[format1];
-      
-      // Try "LastName, FirstName" format reversed (if firstName contains comma)
-      if (firstName && firstName.includes(',')) {
-        const parts = firstName.split(',').map(p => p.trim());
-        if (parts.length === 2) {
-          const format2 = `${parts[1]} ${parts[0]}`.toLowerCase().replace(/\s+/g, ' ').trim();
-          if (householdsByName[format2]) return householdsByName[format2];
-        }
-      }
-      
-      // Try just lastName as family name
-      const format3 = lastName.toLowerCase().replace(/\s+/g, ' ').trim();
-      if (householdsByName[format3]) return householdsByName[format3];
-      
-      // Try just firstName as family name
-      const format4 = firstName.toLowerCase().replace(/\s+/g, ' ').trim();
-      if (householdsByName[format4]) return householdsByName[format4];
-      
-      return null;
-    }
+    // Build set of valid household IDs from database
+    const householdsResult = await db.query('SELECT household_id FROM households');
+    const validHouseholdIds = new Set(householdsResult.rows.map(h => String(h.household_id)));
 
     let updated = 0;
     let notFound = 0;
@@ -1065,38 +1007,32 @@ router.post('/upload/area-mapping', upload.single('file'), async (req, res) => {
       if (!row || row.every(cell => !cell)) continue;
 
       const area = row[areaIndex] ? String(row[areaIndex]).trim() : null;
-      const householdFirstName = row[householdFirstNameIndex] ? String(row[householdFirstNameIndex]).trim() : '';
-      const householdLastName = row[householdLastNameIndex] ? String(row[householdLastNameIndex]).trim() : '';
-      const householdRecordId = householdRecordIdIndex >= 0 && row[householdRecordIdIndex] ? String(row[householdRecordIdIndex]).trim() : null;
+      const householdId = row[householdIdIndex] ? String(row[householdIdIndex]).trim() : null;
 
-      if (!area) {
-        continue; // Skip rows without area data
+      // Skip rows without required data
+      if (!area || !householdId) {
+        continue;
       }
 
-      // Create a unique key for this household
-      const uniqueKey = householdRecordId || `${householdFirstName}|${householdLastName}`.toLowerCase();
-      
       // Skip if we already processed this household
-      if (processedHouseholds.has(uniqueKey)) continue;
-      processedHouseholds.add(uniqueKey);
+      if (processedHouseholds.has(householdId)) continue;
+      processedHouseholds.add(householdId);
 
-      const householdId = findHouseholdId(householdFirstName, householdLastName, householdRecordId);
-      const displayName = householdRecordId || `${householdFirstName} ${householdLastName}`.trim();
-
-      if (householdId) {
+      // Check if household exists in database
+      if (validHouseholdIds.has(householdId)) {
         try {
           await db.query(
             `UPDATE households SET prayer_group = $1, updated_at = NOW() WHERE household_id = $2`,
-            [area, householdId]
+            [area, parseInt(householdId)]
           );
           updated++;
         } catch (err) {
-          skippedRows.push({ row: rowNum, reason: err.message, identifier: displayName });
+          skippedRows.push({ row: rowNum, reason: err.message, householdId });
         }
       } else {
         notFound++;
-        if (notFound <= 20) { // Only track first 20 not found for debugging
-          skippedRows.push({ row: rowNum, reason: 'Household not found', identifier: displayName });
+        if (notFound <= 20) {
+          skippedRows.push({ row: rowNum, reason: 'Household ID not found in database', householdId });
         }
       }
     }
@@ -1109,7 +1045,7 @@ router.post('/upload/area-mapping', upload.single('file'), async (req, res) => {
       total: processedHouseholds.size,
       skippedDetails: skippedRows.slice(0, 50),
       hasMoreSkipped: skippedRows.length > 50,
-      message: `Step 2 complete: Updated ${updated} households with area/prayer group.${notFound > 0 ? ` ${notFound} households not matched (may have different name format).` : ''} Please proceed to upload Donor Mapping file.`
+      message: `Step 2 complete: Updated ${updated} households with area/prayer group.${notFound > 0 ? ` ${notFound} Household IDs not found in database.` : ''} Please proceed to upload Donor Mapping file.`
     });
   } catch (error) {
     console.error('Upload area mapping error:', error);
