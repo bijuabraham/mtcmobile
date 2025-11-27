@@ -483,27 +483,35 @@
       <h2>Upload Donations Data</h2>
       <div class="upload-section">
         <div class="info-box">
-          <h3>Excel Format Requirements</h3>
-          <p>Your Excel file should have the following columns:</p>
-          <ul>
-            <li><strong>household_id</strong> - Household identifier</li>
-            <li><strong>donor_number</strong> - Donor ID/number</li>
-            <li><strong>fund</strong> - Fund name or category (e.g., "General Fund", "Building Fund")</li>
-            <li><strong>amount</strong> - Donation amount (numeric)</li>
-            <li><strong>donation_date</strong> - Date of donation (YYYY-MM-DD, optional)</li>
-          </ul>
-          <p style="margin-top: 10px; color: #666;">
-            <strong>Note:</strong> The update date will be set automatically when you upload the file.
+          <h3>Supported Formats</h3>
+          <p style="margin-bottom: 15px;">The system automatically detects and accepts the following donation file formats:</p>
+          
+          <div style="background: #e8f5e9; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+            <h4 style="color: #2e7d32; margin-bottom: 8px;">Fund Activity Spreadsheet (Recommended)</h4>
+            <p style="font-size: 13px; color: #555;">Export directly from your backend software. Required columns:</p>
+            <ul style="font-size: 13px; margin-top: 5px;">
+              <li><strong>Fund Name</strong> - Category/fund name (e.g., "General Fund")</li>
+              <li><strong>Donor Number</strong> - Donor ID to link to household</li>
+              <li><strong>Giving Date</strong> - Date in MM/DD/YYYY format</li>
+              <li><strong>Amount</strong> - Donation amount</li>
+              <li><strong>Currency Type</strong> - Payment method (Check, EFT, Cash)</li>
+              <li><strong>Comment</strong> - Optional notes</li>
+            </ul>
+          </div>
+          
+          <div style="background: #f5f5f5; padding: 12px; border-radius: 6px;">
+            <h4 style="color: #666; margin-bottom: 8px;">Standard Template</h4>
+            <p style="font-size: 13px; color: #555;">Basic format with columns: household_id, donor_number, fund, amount, donation_date</p>
+          </div>
+          
+          <p style="margin-top: 15px; color: #666; font-size: 13px;">
+            <strong>Note:</strong> Uploading new data will replace all existing donation records.
           </p>
         </div>
 
-        <p style="margin-bottom: 15px; padding: 10px; background: #f0f0f0; border-radius: 5px;">
-          📥 <a href="/templates/donations_template.csv" download style="color: #C41E3A; text-decoration: none; font-weight: 500;">Download Donations Template (CSV)</a>
-        </p>
-
         <form id="donationsUploadForm">
           <div class="form-group">
-            <label for="donationsFile">Select Excel File (.xlsx)</label>
+            <label for="donationsFile">Select Excel or CSV File</label>
             <input type="file" id="donationsFile" name="file" accept=".xlsx,.xls,.csv" required>
           </div>
           <button type="submit" class="btn-primary" id="donationsUploadBtn">Upload Donations</button>

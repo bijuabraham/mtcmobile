@@ -468,13 +468,16 @@ router.post('/upload/donations', upload.single('file'), async (req, res) => {
     }
 
     let data = rawData;
-    let isIconCMOFormat = false;
+    let formatType = 'Standard';
 
     // Check if this is IconCMO format (has metadata rows at the top)
     if (rawData.length > 2 && rawData[2] && rawData[2]['Donations Report'] === 'Household ID') {
-      // IconCMO format detected - skip first 2 metadata rows
       data = rawData.slice(2);
-      isIconCMOFormat = true;
+      formatType = 'IconCMO';
+    }
+    // Check if this is Fund Activity format (from backend software)
+    else if (rawData.length > 0 && rawData[0]['Fund Name'] !== undefined && rawData[0]['Donor Number'] !== undefined) {
+      formatType = 'FundActivity';
     }
 
     if (data.length === 0) {
@@ -488,57 +491,94 @@ router.post('/upload/donations', upload.single('file'), async (req, res) => {
     // Clear existing donations data before importing
     await db.query('TRUNCATE TABLE donations RESTART IDENTITY CASCADE');
 
+    // Pre-fetch all households for Fund Activity format (to look up household_id by donor_number)
+    let householdsByDonor = {};
+    if (formatType === 'FundActivity') {
+      const householdsResult = await db.query('SELECT household_id, donor_id FROM households WHERE donor_id IS NOT NULL');
+      for (const h of householdsResult.rows) {
+        householdsByDonor[String(h.donor_id)] = h.household_id;
+      }
+    }
+
     let inserted = 0;
     let skipped = 0;
 
     for (const row of data) {
-      let householdId, donorNumber, fund, amount;
+      let householdId, donorNumber, fund, amount, donationDate, paymentMethod, description;
 
-      if (isIconCMOFormat) {
+      if (formatType === 'IconCMO') {
         // IconCMO format mapping
         householdId = row['Donations Report'];
         donorNumber = row['__EMPTY'];
         fund = row['__EMPTY_1'];
         amount = row['__EMPTY_2'];
+        donationDate = null;
+        paymentMethod = null;
+        description = null;
+      } else if (formatType === 'FundActivity') {
+        // Fund Activity format from backend software
+        donorNumber = row['Donor Number'];
+        fund = row['Fund Name'];
+        amount = row['Amount'];
+        paymentMethod = row['Currency Type'] || null;
+        description = row['Comment'] || null;
+        
+        // Parse date from MM/DD/YYYY format
+        const givingDate = row['Giving Date'];
+        if (givingDate) {
+          const parts = String(givingDate).split('/');
+          if (parts.length === 3) {
+            donationDate = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+          }
+        }
+        
+        // Look up household_id from donor_number
+        householdId = householdsByDonor[String(donorNumber)] || null;
       } else {
         // Standard template format
         householdId = row.household_id;
         donorNumber = row.donor_number;
         fund = row.fund;
         amount = row.amount;
+        donationDate = row.donation_date || null;
+        paymentMethod = row.payment_method || null;
+        description = row.description || null;
       }
 
       // Skip header row (if it wasn't already skipped)
-      if (householdId === 'Household ID' || householdId === 'household_id') {
+      if (householdId === 'Household ID' || householdId === 'household_id' || fund === 'Fund Name') {
         skipped++;
         continue;
       }
 
       // Skip rows with missing required data
-      if (!householdId || !donorNumber || !fund || amount == null) {
+      if (!donorNumber || !fund || amount == null) {
         skipped++;
         continue;
       }
 
       const amountValue = parseFloat(amount);
-      if (isNaN(amountValue)) {
+      if (isNaN(amountValue) || amountValue === 0) {
         skipped++;
         continue;
       }
 
-      const donationDate = row.donation_date || new Date().toISOString().split('T')[0];
+      // Use today's date if no donation date provided
+      const finalDonationDate = donationDate || new Date().toISOString().split('T')[0];
 
       try {
         await db.query(
           `INSERT INTO donations 
-           (household_id, donor_number, category, amount, donation_date, updated_at)
-           VALUES ($1, $2, $3, $4, $5, NOW())`,
+           (household_id, donor_number, category, amount, donation_date, payment_method, description, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
           [
-            String(householdId),
+            householdId ? String(householdId) : null,
             String(donorNumber),
             String(fund),
             amountValue,
-            donationDate
+            finalDonationDate,
+            paymentMethod,
+            description
           ]
         );
         inserted++;
@@ -553,7 +593,7 @@ router.post('/upload/donations', upload.single('file'), async (req, res) => {
       inserted,
       skipped,
       total: data.length,
-      format: isIconCMOFormat ? 'IconCMO' : 'Standard'
+      format: formatType
     });
   } catch (error) {
     console.error('Upload donations error:', error);

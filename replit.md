@@ -19,6 +19,7 @@ Preferred communication style: Simple, everyday language.
 - **Profile Completion Redirect Fix**: Root layout now properly redirects new users to complete-profile screen based on authentication state priority (suspended > incomplete profile > pending approval > approved)
 - **Donor Number Read-Only for Users**: Users can view their Donor Number in Settings but cannot edit it; only admins can modify donor numbers
 - **Household Linking on Approval/Donor Update**: When admin approves a user or updates their donor number, the system automatically links them to their household by matching user's donor_number with household's donor_id
+- **Fund Activity Donation Upload**: Updated donation upload to accept Fund Activity Spreadsheet format from backend software (columns: Fund Name, Donor Number, Giving Date, Amount, Currency Type, Comment). System auto-detects format and extracts payment method and notes.
 
 ## System Architecture
 
