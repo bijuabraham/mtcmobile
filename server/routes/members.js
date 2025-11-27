@@ -1,11 +1,12 @@
 const express = require('express');
 const db = require('../db');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateAndRequireApproval } = require('../middleware/auth');
 const { keysToCamelCase } = require('../utils/camelCase');
 
 const router = express.Router();
 
-router.get('/', authenticateToken, async (req, res) => {
+// Get members directory (requires approval)
+router.get('/', authenticateAndRequireApproval, async (req, res) => {
   try {
     const { search } = req.query;
     
