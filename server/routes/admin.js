@@ -502,8 +502,12 @@ router.post('/upload/donations', upload.single('file'), async (req, res) => {
 
     let inserted = 0;
     let skipped = 0;
+    let skippedRows = [];
 
-    for (const row of data) {
+    for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
+      const row = data[rowIndex];
+      const rowNum = rowIndex + 2; // +2 for 1-based index and header row
+      
       let householdId, donorNumber, fund, amount, donationDate, paymentMethod, description;
 
       if (formatType === 'IconCMO') {
@@ -551,15 +555,42 @@ router.post('/upload/donations', upload.single('file'), async (req, res) => {
         continue;
       }
 
-      // Skip rows with missing required data
-      if (!donorNumber || !fund || amount == null) {
+      // Skip empty rows
+      if (!donorNumber && !fund && amount == null) {
         skipped++;
+        skippedRows.push({ row: rowNum, reason: 'Empty row' });
+        continue;
+      }
+
+      // Skip rows with missing required data
+      if (!donorNumber) {
+        skipped++;
+        skippedRows.push({ row: rowNum, reason: 'Missing Donor Number', fund: fund || '-' });
+        continue;
+      }
+      
+      if (!fund) {
+        skipped++;
+        skippedRows.push({ row: rowNum, reason: 'Missing Fund Name', donorNumber: donorNumber });
+        continue;
+      }
+      
+      if (amount == null) {
+        skipped++;
+        skippedRows.push({ row: rowNum, reason: 'Missing Amount', donorNumber: donorNumber, fund: fund });
         continue;
       }
 
       const amountValue = parseFloat(amount);
-      if (isNaN(amountValue) || amountValue === 0) {
+      if (isNaN(amountValue)) {
         skipped++;
+        skippedRows.push({ row: rowNum, reason: `Invalid amount: "${amount}"`, donorNumber: donorNumber, fund: fund });
+        continue;
+      }
+      
+      if (amountValue === 0) {
+        skipped++;
+        skippedRows.push({ row: rowNum, reason: 'Amount is zero', donorNumber: donorNumber, fund: fund });
         continue;
       }
 
@@ -585,15 +616,22 @@ router.post('/upload/donations', upload.single('file'), async (req, res) => {
       } catch (dbError) {
         console.error('Error inserting donation:', dbError.message);
         skipped++;
+        skippedRows.push({ row: rowNum, reason: `Database error: ${dbError.message}`, donorNumber: donorNumber, fund: fund });
       }
     }
+
+    // Limit skipped rows details to first 50 to avoid huge responses
+    const skippedDetails = skippedRows.slice(0, 50);
+    const hasMoreSkipped = skippedRows.length > 50;
 
     res.json({
       success: true,
       inserted,
       skipped,
       total: data.length,
-      format: formatType
+      format: formatType,
+      skippedDetails,
+      hasMoreSkipped
     });
   } catch (error) {
     console.error('Upload donations error:', error);

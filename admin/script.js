@@ -572,12 +572,47 @@ document.getElementById('donationsUploadForm').addEventListener('submit', async 
     
     const resultBox = document.getElementById('donationsResult');
     resultBox.className = 'result-box success';
+    
+    let skippedHtml = '';
+    if (result.skippedDetails && result.skippedDetails.length > 0) {
+      const nonEmptySkipped = result.skippedDetails.filter(s => s.reason !== 'Empty row');
+      if (nonEmptySkipped.length > 0) {
+        skippedHtml = `
+          <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 6px; border: 1px solid #ffc107;">
+            <strong style="color: #856404;">Skipped Rows Details:</strong>
+            <table style="width: 100%; margin-top: 8px; font-size: 13px; border-collapse: collapse;">
+              <thead>
+                <tr style="background: #ffeeba;">
+                  <th style="padding: 6px; text-align: left; border-bottom: 1px solid #ffc107;">Row</th>
+                  <th style="padding: 6px; text-align: left; border-bottom: 1px solid #ffc107;">Reason</th>
+                  <th style="padding: 6px; text-align: left; border-bottom: 1px solid #ffc107;">Donor #</th>
+                  <th style="padding: 6px; text-align: left; border-bottom: 1px solid #ffc107;">Fund</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${nonEmptySkipped.map(s => `
+                  <tr>
+                    <td style="padding: 5px; border-bottom: 1px solid #ffe69c;">${s.row}</td>
+                    <td style="padding: 5px; border-bottom: 1px solid #ffe69c;">${s.reason}</td>
+                    <td style="padding: 5px; border-bottom: 1px solid #ffe69c;">${s.donorNumber || '-'}</td>
+                    <td style="padding: 5px; border-bottom: 1px solid #ffe69c;">${s.fund || '-'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            ${result.hasMoreSkipped ? '<p style="margin-top: 8px; font-size: 12px; color: #856404;">... and more rows were skipped (showing first 50)</p>' : ''}
+          </div>
+        `;
+      }
+    }
+    
     resultBox.innerHTML = `
       <strong>Upload Successful!</strong><br>
       Format: ${result.format || 'Standard'}<br>
       ${result.inserted} donations inserted<br>
       ${result.skipped} rows skipped<br>
       Total processed: ${result.total}
+      ${skippedHtml}
     `;
     
     showNotification('Donations uploaded successfully!');
