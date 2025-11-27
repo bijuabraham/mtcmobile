@@ -3,9 +3,10 @@
 echo "🚀 Starting Church Management App..."
 echo "🌐 App will be available at: https://${REPLIT_DEV_DOMAIN}"
 
-# Start Expo dev server on port 8081 in the background
+# Start Expo dev server on port 8081 in the background with tunnel for mobile access
 echo "🎨 Starting Expo dev server on port 8081..."
-cd project && EXPO_NO_TELEMETRY=1 BROWSER=none EXPO_ADDITIONAL_ORIGINS="https://${REPLIT_DEV_DOMAIN}" npx expo start --web --port 8081 &
+echo "📱 Tunnel mode enabled - scan QR code with Expo Go app"
+cd project && EXPO_NO_TELEMETRY=1 BROWSER=none EXPO_ADDITIONAL_ORIGINS="https://${REPLIT_DEV_DOMAIN}" npx expo start --web --tunnel --port 8081 &
 EXPO_PID=$!
 
 # Wait for Expo to be ready
