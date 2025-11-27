@@ -768,23 +768,46 @@ router.post('/upload/prayer-groups', upload.single('file'), async (req, res) => 
 // ===========================================
 
 // Helper function to parse Excel date serial number
+// Returns null for invalid dates (year < 1, etc.) to avoid PostgreSQL errors
 function parseExcelDate(serial) {
   if (!serial) return null;
+  
+  let dateStr = null;
+  
   if (typeof serial === 'string') {
-    // Already a date string like "07/29/1966"
+    // Already a date string like "07/29/1966" or "1966-07-29"
     const parts = serial.split('/');
     if (parts.length === 3) {
       const [month, day, year] = parts;
-      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      dateStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    } else {
+      dateStr = serial;
     }
-    return serial;
-  }
-  if (typeof serial === 'number') {
+  } else if (typeof serial === 'number') {
+    // Excel serial number - only valid if > 1 (1900-01-01)
+    if (serial < 1) return null;
     const excelEpoch = new Date(1899, 11, 30);
     const jsDate = new Date(excelEpoch.getTime() + serial * 86400000);
-    return jsDate.toISOString().split('T')[0];
+    dateStr = jsDate.toISOString().split('T')[0];
   }
-  return null;
+  
+  // Validate the date is valid for PostgreSQL (year must be >= 1)
+  if (dateStr) {
+    const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+      const year = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10);
+      const day = parseInt(match[3], 10);
+      // PostgreSQL requires year >= 1, valid month (1-12), valid day (1-31)
+      if (year < 1 || month < 1 || month > 12 || day < 1 || day > 31) {
+        return null;
+      }
+    } else {
+      return null; // Invalid format
+    }
+  }
+  
+  return dateStr;
 }
 
 // Step 1: Upload Church Directory (ExportFile.xls)
