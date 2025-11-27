@@ -1,18 +1,19 @@
 const express = require('express');
 const db = require('../db');
-const { authenticateAndRequireApproval } = require('../middleware/auth');
+const { isApproved } = require('../googleAuth');
 const { keysToCamelCase } = require('../utils/camelCase');
 
 const router = express.Router();
 
 // Get user's donations (requires approval)
-router.get('/', authenticateAndRequireApproval, async (req, res) => {
+router.get('/', isApproved, async (req, res) => {
   try {
     const { start_date, end_date } = req.query;
 
+    const userId = req.user?.dbUser?.id;
     const userResult = await db.query(
       'SELECT household_id FROM users WHERE id = $1',
-      [req.userId]
+      [userId]
     );
 
     if (!userResult.rows.length || !userResult.rows[0].household_id) {

@@ -29,11 +29,11 @@ Preferred communication style: Simple, everyday language.
 ### Backend
 - **Database**: Replit PostgreSQL, managed via environment variables.
 - **Server**: Node.js with Express (unified server on port 5000), providing RESTful API endpoints for all application data.
-- **Authentication**: Hybrid authentication system:
-  - **Google OAuth (Primary)**: Uses Replit Auth with session-based storage (PostgreSQL-backed via connect-pg-simple)
+- **Authentication**: Google OAuth with session-based storage:
+  - **Google OAuth**: Direct Google OAuth with session-based storage (PostgreSQL-backed via connect-pg-simple)
   - **Manual Admin Approval**: New users complete profile (First Name, Last Name, Donor Number) and wait for administrator approval
-  - **Legacy JWT Auth**: Preserved for backward compatibility, extended to check approval status
-- **Authorization Middleware**: `authenticateAndRequireApproval` middleware enforces both authentication and approval status on protected routes
+  - **Admin Auto-Approval**: admin@marthomasf.org is automatically approved upon registration
+- **Authorization Middleware**: `isApproved` middleware (in googleAuth.js) enforces both authentication and approval status on protected routes
 - **Data Models**: Key tables include `users` (with google_id, profile_complete, is_approved, approved_at, approved_by fields), `church_configurations`, `households`, `members`, `donations`, `announcements`, and `contact_us`.
 - **Admin Panel**: A separate web-based admin panel (`/admin/login.html`) with tabs for:
   - Church Configuration (branding, contact info)

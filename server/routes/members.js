@@ -1,17 +1,18 @@
 const express = require('express');
 const db = require('../db');
-const { authenticateAndRequireApproval } = require('../middleware/auth');
+const { isApproved } = require('../googleAuth');
 const { keysToCamelCase } = require('../utils/camelCase');
 
 const router = express.Router();
 
 // Get members directory (requires approval)
-router.get('/', authenticateAndRequireApproval, async (req, res) => {
+router.get('/', isApproved, async (req, res) => {
   try {
     const { search } = req.query;
     
     // Get the current user's email to check if they are in the members table
-    const userResult = await db.query('SELECT email FROM users WHERE id = $1', [req.userId]);
+    const userId = req.user?.dbUser?.id;
+    const userResult = await db.query('SELECT email FROM users WHERE id = $1', [userId]);
     if (userResult.rows.length === 0) {
       console.log('❌ Directory access: User not found, userId:', req.userId);
       return res.status(404).json({ error: 'User not found' });
