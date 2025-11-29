@@ -1,0 +1,20 @@
+ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
+aider-chat 0.56.0 requires filelock==3.15.4, but you have filelock 3.18.0 which is incompatible.
+aider-chat 0.56.0 requires huggingface-hub==0.24.6, but you have huggingface-hub 0.29.3 which is incompatible.
+aider-chat 0.56.0 requires jinja2==3.1.4, but you have jinja2 3.1.6 which is incompatible.
+aider-chat 0.56.0 requires markupsafe==2.1.5, but you have markupsafe 3.0.2 which is incompatible.
+aider-chat 0.56.0 requires numpy==1.26.4, but you have numpy 2.2.4 which is incompatible.
+aider-chat 0.56.0 requires openai==1.42.0, but you have openai 1.67.0 which is incompatible.
+aider-chat 0.56.0 requires packaging==24.1, but you have packaging 24.2 which is incompatible.
+aider-chat 0.56.0 requires pydantic==2.8.2, but you have pydantic 2.10.6 which is incompatible.
+aider-chat 0.56.0 requires pydantic-core==2.20.1, but you have pydantic-core 2.27.2 which is incompatible.
+aider-chat 0.56.0 requires tokenizers==0.19.1, but you have tokenizers 0.21.1 which is incompatible.
+aider-chat 0.56.0 requires typing-extensions==4.12.2, but you have typing-extensions 4.13.1 which is incompatible.
+aider-chat 0.56.0 requires urllib3==2.2.2, but you have urllib3 1.26.20 which is incompatible.
+aiobotocore 2.7.0 requires botocore<1.31.65,>=1.31.16, but you have botocore 1.41.5 which is incompatible.
+matplotlib 3.8.0 requires numpy<2,>=1.21, but you have numpy 2.2.4 which is incompatible.
+s3fs 2023.10.0 requires fsspec==2023.10.0, but you have fsspec 2024.6.1 which is incompatible.
+tensorflow 2.16.1 requires numpy<2.0.0,>=1.23.5; python_version <= "3.11", but you have numpy 2.2.4 which is incompatible.
+astropy 5.3.4 requires numpy<2,>=1.21, but you have numpy 2.2.4 which is incompatible.
+anaconda-cloud-auth 0.1.4 requires pydantic<2.0, but you have pydantic 2.10.6 which is incompatible.
+Successfully installed awsebcli-3.25.3 blessed-1.25.0 botocore-1.41.5 cement-2.10.14 fabric-3.2.2 invoke-2.2.1 packaging-24.2 paramiko-4.0.0 semantic_version-2.10.0 urllib3-1.26.20
