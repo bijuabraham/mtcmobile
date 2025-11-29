@@ -65,6 +65,23 @@ async function startServer() {
     res.json({ status: 'ok', message: 'Church Management API is running' });
   });
 
+  // Debug endpoint to check if environment variables are loaded (doesn't expose values)
+  app.get('/api/debug/env-check', (req, res) => {
+    const googleClientId = process.env.GOOGLE_CLIENT_ID;
+    const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    res.json({
+      GOOGLE_CLIENT_ID_SET: !!googleClientId,
+      GOOGLE_CLIENT_ID_LENGTH: googleClientId?.length || 0,
+      GOOGLE_CLIENT_ID_STARTS_WITH: googleClientId?.substring(0, 10) || 'NOT SET',
+      GOOGLE_CLIENT_ID_ENDS_WITH: googleClientId?.endsWith('.apps.googleusercontent.com') || false,
+      GOOGLE_CLIENT_SECRET_SET: !!googleClientSecret,
+      GOOGLE_CLIENT_SECRET_LENGTH: googleClientSecret?.length || 0,
+      DATABASE_URL_SET: !!process.env.DATABASE_URL,
+      NODE_ENV: process.env.NODE_ENV || 'not set',
+      SESSION_SECRET_SET: !!process.env.SESSION_SECRET
+    });
+  });
+
   if (process.env.NODE_ENV !== 'production') {
     app.use('/', createProxyMiddleware({
       target: 'http://localhost:8081',
