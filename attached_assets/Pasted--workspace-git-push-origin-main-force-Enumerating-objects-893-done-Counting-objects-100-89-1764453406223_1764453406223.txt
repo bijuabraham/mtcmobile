@@ -1,0 +1,44 @@
+~/workspace$ git push origin main --force
+Enumerating objects: 893, done.
+Counting objects: 100% (893/893), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (805/805), done.
+Writing objects: 100% (818/818), 819.99 KiB | 13.22 MiB/s, done.
+Total 818 (delta 704), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (704/704), completed with 54 local objects.
+remote: error: GH013: Repository rule violations found for refs/heads/main.
+remote: 
+remote: - GITHUB PUSH PROTECTION
+remote:   —————————————————————————————————————————
+remote:     Resolve the following violations before pushing again
+remote: 
+remote:     - Push cannot contain secrets
+remote: 
+remote:     
+remote:      (?) Learn how to resolve a blocked push
+remote:      https://docs.github.com/code-security/secret-scanning/working-with-secret-scanning-and-push-protection/working-with-push-protection-from-the-command-line#resolving-a-blocked-push
+remote:     
+remote:     
+remote:       —— Amazon AWS Access Key ID ——————————————————————————
+remote:        locations:
+remote:          - commit: 24d434bfdf6f68a3867fee479d76eb0d4065a40a
+remote:            path: attached_assets/Pasted-Last-login-Mon-Nov-24-15-45-00-on-ttys001-base-bijuabraham-Bijus-MacBook-Pro-16-sudo-Library-1764432410551_1764432410551.txt:323
+remote:     
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.
+remote:        https://github.com/bijuabraham/mtcmobile/security/secret-scanning/unblock-secret/36AbOnGwVZgBSj7yAPSnGcHOo12
+remote:     
+remote:     
+remote:       —— Amazon AWS Secret Access Key ——————————————————————
+remote:        locations:
+remote:          - commit: 24d434bfdf6f68a3867fee479d76eb0d4065a40a
+remote:            path: attached_assets/Pasted-Last-login-Mon-Nov-24-15-45-00-on-ttys001-base-bijuabraham-Bijus-MacBook-Pro-16-sudo-Library-1764432410551_1764432410551.txt:324
+remote:     
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.
+remote:        https://github.com/bijuabraham/mtcmobile/security/secret-scanning/unblock-secret/36AbOsZ3CRQAdrjC1FtOyyDQL3F
+remote:     
+remote: 
+remote: 
+To https://github.com/bijuabraham/mtcmobile
+ ! [remote rejected] main -> main (push declined due to repository rule violations)
+error: failed to push some refs to 'https://github.com/bijuabraham/mtcmobile'
+~/workspace$ 

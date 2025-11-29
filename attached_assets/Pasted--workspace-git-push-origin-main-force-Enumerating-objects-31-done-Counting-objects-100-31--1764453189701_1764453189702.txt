@@ -1,0 +1,52 @@
+~/workspace$ git push origin main --force
+Enumerating objects: 31, done.
+Counting objects: 100% (31/31), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (26/26), done.
+Writing objects: 100% (26/26), 704.49 KiB | 15.31 MiB/s, done.
+Total 26 (delta 15), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (15/15), completed with 4 local objects.
+remote: error: GH013: Repository rule violations found for refs/heads/main.
+remote: 
+remote: - GITHUB PUSH PROTECTION
+remote:   —————————————————————————————————————————
+remote:     Resolve the following violations before pushing again
+remote: 
+remote:     - Push cannot contain secrets
+remote: 
+remote:     
+remote:      (?) Learn how to resolve a blocked push
+remote:      https://docs.github.com/code-security/secret-scanning/working-with-secret-scanning-and-push-protection/working-with-push-protection-from-the-command-line#resolving-a-blocked-push
+remote:     
+remote:     
+remote:       —— Amazon AWS Access Key ID ——————————————————————————
+remote:        locations:
+remote:          - commit: f2c2550c3b1ad77e5d576fc82a03f6ef76ba8e31
+remote:            path: attached_assets/Pasted-Last-login-Mon-Nov-24-15-45-00-on-ttys001-base-bijuabraham-Bijus-MacBook-Pro-16-sudo-Library-1764432262993_1764432262994.txt:323
+remote:          - commit: f2c2550c3b1ad77e5d576fc82a03f6ef76ba8e31
+remote:            path: attached_assets/Pasted-Last-login-Mon-Nov-24-15-45-00-on-ttys001-base-bijuabraham-Bijus-MacBook-Pro-16-sudo-Library-1764451141802_1764451141802.txt:323
+remote:          - commit: f2c2550c3b1ad77e5d576fc82a03f6ef76ba8e31
+remote:            path: attached_assets/eblogs_1764432514223:323
+remote:     
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.
+remote:        https://github.com/bijuabraham/mtcmobile/security/secret-scanning/unblock-secret/36AbOnGwVZgBSj7yAPSnGcHOo12
+remote:     
+remote:     
+remote:       —— Amazon AWS Secret Access Key ——————————————————————
+remote:        locations:
+remote:          - commit: f2c2550c3b1ad77e5d576fc82a03f6ef76ba8e31
+remote:            path: attached_assets/Pasted-Last-login-Mon-Nov-24-15-45-00-on-ttys001-base-bijuabraham-Bijus-MacBook-Pro-16-sudo-Library-1764432262993_1764432262994.txt:324
+remote:          - commit: f2c2550c3b1ad77e5d576fc82a03f6ef76ba8e31
+remote:            path: attached_assets/Pasted-Last-login-Mon-Nov-24-15-45-00-on-ttys001-base-bijuabraham-Bijus-MacBook-Pro-16-sudo-Library-1764451141802_1764451141802.txt:324
+remote:          - commit: f2c2550c3b1ad77e5d576fc82a03f6ef76ba8e31
+remote:            path: attached_assets/eblogs_1764432514223:324
+remote:     
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.
+remote:        https://github.com/bijuabraham/mtcmobile/security/secret-scanning/unblock-secret/36AbOsZ3CRQAdrjC1FtOyyDQL3F
+remote:     
+remote: 
+remote: 
+To https://github.com/bijuabraham/mtcmobile
+ ! [remote rejected] main -> main (push declined due to repository rule violations)
+error: failed to push some refs to 'https://github.com/bijuabraham/mtcmobile'
+~/workspace$ 
