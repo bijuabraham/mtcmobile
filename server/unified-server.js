@@ -31,14 +31,25 @@ async function startServer() {
     console.error('⚠️ Google OAuth initialization failed:', error.message);
   }
 
-  const adminPath = path.join(__dirname, '..', 'admin');
+  // Check both locations for admin files (local dev vs production deployment)
+  const fs = require('fs');
+  let adminPath = path.join(__dirname, 'admin'); // Production: admin inside server folder
+  if (!fs.existsSync(adminPath)) {
+    adminPath = path.join(__dirname, '..', 'admin'); // Local dev: admin in parent folder
+  }
+  console.log('📁 Admin path:', adminPath);
   app.use('/admin', express.static(adminPath, { 
     dotfiles: 'deny',
     index: false,
     extensions: ['html']
   }));
 
-  const templatesPath = path.join(__dirname, '..', 'templates');
+  // Check both locations for templates
+  let templatesPath = path.join(__dirname, 'templates'); // Production
+  if (!fs.existsSync(templatesPath)) {
+    templatesPath = path.join(__dirname, '..', 'templates'); // Local dev
+  }
+  console.log('📁 Templates path:', templatesPath);
   app.use('/templates', express.static(templatesPath));
 
   app.use('/api/auth/legacy', authRoutes);
