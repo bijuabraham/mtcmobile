@@ -1,0 +1,27 @@
+# Dependencies (will be installed on deploy)
+node_modules/
+
+# Development files
+.env
+.env.local
+*.log
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+*.test.js
+__tests__/
+
+# Documentation
+*.md
+!README.md
