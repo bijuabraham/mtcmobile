@@ -1,0 +1,19 @@
+bash-3.2$ eb logs | grep -i error
+Nov 29 16:00:22 ip-172-31-6-96 web[2280]: Error: Cannot find module 'http-proxy-middleware'
+Nov 29 16:00:23 ip-172-31-6-96 web[2302]: Error: Cannot find module 'http-proxy-middleware'
+Nov 29 16:00:24 ip-172-31-6-96 web[2324]: Error: Cannot find module 'http-proxy-middleware'
+Nov 29 16:00:25 ip-172-31-6-96 web[2346]: Error: Cannot find module 'http-proxy-middleware'
+2025/11/29 16:00:21.403822 [WARN] failed to read file /var/pids/web.pid with error: open /var/pids/web.pid: no such file or directory
+2025/11/29 16:00:22.404888 [WARN] failed to read file /var/pids/web.pid with error: open /var/pids/web.pid: no such file or directory
+2025/11/29 16:00:24.405069 [WARN] failed to read file /var/pids/web.pid with error: open /var/pids/web.pid: no such file or directory
+2025/11/29 16:00:27.407170 [WARN] failed to read file /var/pids/web.pid with error: open /var/pids/web.pid: no such file or directory
+2025/11/29 16:00:31.410293 [WARN] failed to read file /var/pids/web.pid with error: open /var/pids/web.pid: no such file or directory
+2025/11/29 16:00:36.414443 [WARN] failed to read file /var/pids/web.pid with error: open /var/pids/web.pid: no such file or directory
+2025/11/29 16:00:36.414497 [ERROR] update processes [web cfn-hup healthd nginx] pid symlinks failed with error failed to read file /var/pids/web.pid after 6 attempts
+2025/11/29 16:00:36.414507 [ERROR] An error occurred during execution of command [app-deploy] - [Track pids in healthd]. Stop running the command. Error: update processes [web cfn-hup healthd nginx] pid symlinks failed with error failed to read file /var/pids/web.pid after 6 attempts 
+2025/11/29 16:00:36.414589 [INFO] CommandService Response: {"status":"FAILURE","api_version":"1.0","results":[{"status":"FAILURE","msg":"Engine execution has encountered an error.","returncode":1,"events":[{"msg":"Instance deployment: The deployment used the default Node.js version for your platform version instead of the Node.js version included in your 'package.json'.","timestamp":1764432007839,"severity":"WARN"},{"msg":"Instance deployment failed. For details, see 'eb-engine.log'.","timestamp":1764432036414,"severity":"ERROR"}]}]}
+2025/11/29 16:03:28.630841 [INFO] Running command: tail -n 100 /var/log/nginx/error.log
+2025/11/29 16:05:56.445213 [INFO] Running command: tail -n 100 /var/log/nginx/error.log
+2025/11/29 16:06:31.067990 [INFO] Running command: tail -n 100 /var/log/nginx/error.log
+/var/log/nginx/error.log
+bash-3.2$ 
