@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Church Admin Panel</title>
+  <link rel="stylesheet" href="/admin/styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Church Management Admin Panel</h1>
+      <button type="button" id="logoutBtn" class="btn-secondary">Logout</button>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="config">Configuration</button>
+      <button class="tab-btn" data-tab="contact">Contact Us</button>
+      <button class="tab-btn" data-tab="approvals">User Approvals</button>
+      <button class="tab-btn" data-tab="announcements">Announcements</button>
+      <button class="tab-btn" data-tab="directory-import">Directory Import</button>
+      <button class="tab-btn" data-tab="donations">Donations Upload</button>
+      <button class="tab-btn" data-tab="admins">Admin Management</button>
+    </div>
+
+    <!-- Configuration Tab -->
+    <div id="config-tab" class="tab-content active">
+      <h2>Church Configuration</h2>
+      <form id="configForm">
+        <div class="form-group">
+          <label for="churchName">Church Name</label>
+          <input type="text" id="churchName" name="churchName" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="primaryColor">Primary Color</label>
+            <input type="color" id="primaryColor" name="primaryColor" required>
+          </div>
+
+          <div class="form-group">
+            <label for="secondaryColor">Secondary Color</label>
+            <input type="color" id="secondaryColor" name="secondaryColor" required>
+          </div>
+
+          <div class="form-group">
+            <label for="accentColor">Accent Color</label>
+            <input type="color" id="accentColor" name="accentColor" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="logoUrl">Logo URL</label>
+          <input type="url" id="logoUrl" name="logoUrl" placeholder="https://example.com/logo.png">
+        </div>
+
+        <div class="form-group">
+          <label for="calendarId">Calendar ID (Google Calendar)</label>
+          <input type="text" id="calendarId" name="calendarId" placeholder="admin@yourchurch.org">
+        </div>
+
+        <div class="form-group">
+          <label for="timezone">Timezone</label>
+          <select id="timezone" name="timezone" required style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;">
+            <option value="America/New_York">Eastern Time (America/New_York)</option>
+            <option value="America/Chicago">Central Time (America/Chicago)</option>
+            <option value="America/Denver">Mountain Time (America/Denver)</option>
+            <option value="America/Phoenix">Arizona Time (America/Phoenix)</option>
+            <option value="America/Los_Angeles">Pacific Time (America/Los_Angeles)</option>
+            <option value="America/Anchorage">Alaska Time (America/Anchorage)</option>
+            <option value="Pacific/Honolulu">Hawaii Time (Pacific/Honolulu)</option>
+            <option value="Europe/London">London (Europe/London)</option>
+            <option value="Europe/Paris">Paris (Europe/Paris)</option>
+            <option value="Asia/Dubai">Dubai (Asia/Dubai)</option>
+            <option value="Asia/Kolkata">India (Asia/Kolkata)</option>
+            <option value="Asia/Singapore">Singapore (Asia/Singapore)</option>
+            <option value="Asia/Tokyo">Tokyo (Asia/Tokyo)</option>
+            <option value="Australia/Sydney">Sydney (Australia/Sydney)</option>
+          </select>
+        </div>
+
+        <h3>API Endpoints</h3>
+        
+        <div class="form-group">
+          <label for="iconcmo">IconCMO API URL</label>
+          <input type="url" id="iconcmo" name="iconcmo" placeholder="https://api.iconcmo.com">
+        </div>
+
+
+        <div class="form-group">
+          <label for="standardPayments">Standard Payments URL</label>
+          <input type="url" id="standardPayments" name="standardPayments" placeholder="https://yourchurch.org/donate">
+        </div>
+
+        <div class="button-group">
+          <button type="submit" class="btn-primary">Save Configuration</button>
+          <button type="button" id="loadConfigBtn" class="btn-secondary">Load Current Config</button>
+        </div>
+      </form>
+
+      <div id="configPreview" class="preview-section">
+        <h3>Preview</h3>
+        <div class="preview-box">
+          <div id="previewHeader" class="preview-header">
+            <div id="previewLogo" class="preview-logo">Church</div>
+            <div id="previewChurchName" class="preview-church-name">Church Management</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact Us Tab -->
+    <div id="contact-tab" class="tab-content">
+      <h2>Contact Us Configuration</h2>
+      <p style="color: #666; margin-bottom: 20px;">Configure church contact information displayed in the mobile app.</p>
+      
+      <form id="contactForm">
+        <h3>Vicar Information</h3>
+        <div class="form-group">
+          <label for="vicarName">Vicar Name</label>
+          <input type="text" id="vicarName" name="vicarName" placeholder="Rev. John Doe">
+        </div>
+
+        <div class="form-group">
+          <label for="vicarPhotoUrl">Vicar Photo URL</label>
+          <input type="url" id="vicarPhotoUrl" name="vicarPhotoUrl" placeholder="https://example.com/vicar-photo.jpg">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="vicarPhone">Vicar Phone</label>
+            <input type="tel" id="vicarPhone" name="vicarPhone" placeholder="+1 (555) 123-4567">
+          </div>
+
+          <div class="form-group">
+            <label for="vicarEmail">Vicar Email</label>
+            <input type="email" id="vicarEmail" name="vicarEmail" placeholder="vicar@church.org">
+          </div>
+        </div>
+
+        <h3>Church Address</h3>
+        <div class="form-group">
+          <label for="churchAddress">Full Church Address</label>
+          <textarea id="churchAddress" name="churchAddress" rows="2" 
+                    placeholder="123 Church Street, City, State 12345"></textarea>
+        </div>
+
+        <h3>Executive Board</h3>
+        <p style="color: #666; margin-bottom: 15px;">Configure contact information for executive board members.</p>
+        
+        <div id="executiveBoardContainer">
+          <!-- Vice President -->
+          <div class="board-member-section">
+            <h4>Vice President</h4>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" data-position="Vice President" data-field="name" class="board-input" placeholder="Name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" data-position="Vice President" data-field="phone" class="board-input" placeholder="Phone (optional)">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" data-position="Vice President" data-field="email" class="board-input" placeholder="Email (optional)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Secretary -->
+          <div class="board-member-section">
+            <h4>Secretary</h4>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" data-position="Secretary" data-field="name" class="board-input" placeholder="Name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" data-position="Secretary" data-field="phone" class="board-input" placeholder="Phone (optional)">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" data-position="Secretary" data-field="email" class="board-input" placeholder="Email (optional)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Treasurer - Cash -->
+          <div class="board-member-section">
+            <h4>Treasurer - Cash</h4>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" data-position="Treasurer - Cash" data-field="name" class="board-input" placeholder="Name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" data-position="Treasurer - Cash" data-field="phone" class="board-input" placeholder="Phone (optional)">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" data-position="Treasurer - Cash" data-field="email" class="board-input" placeholder="Email (optional)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Treasurer - Accounts -->
+          <div class="board-member-section">
+            <h4>Treasurer - Accounts</h4>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" data-position="Treasurer - Accounts" data-field="name" class="board-input" placeholder="Name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" data-position="Treasurer - Accounts" data-field="phone" class="board-input" placeholder="Phone (optional)">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" data-position="Treasurer - Accounts" data-field="email" class="board-input" placeholder="Email (optional)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Lay Leader (Malayalam) -->
+          <div class="board-member-section">
+            <h4>Lay Leader (Malayalam)</h4>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" data-position="Lay Leader (Malayalam)" data-field="name" class="board-input" placeholder="Name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" data-position="Lay Leader (Malayalam)" data-field="phone" class="board-input" placeholder="Phone (optional)">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" data-position="Lay Leader (Malayalam)" data-field="email" class="board-input" placeholder="Email (optional)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Lay Leader (English) -->
+          <div class="board-member-section">
+            <h4>Lay Leader (English)</h4>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" data-position="Lay Leader (English)" data-field="name" class="board-input" placeholder="Name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" data-position="Lay Leader (English)" data-field="phone" class="board-input" placeholder="Phone (optional)">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" data-position="Lay Leader (English)" data-field="email" class="board-input" placeholder="Email (optional)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Mandalam Member -->
+          <div class="board-member-section">
+            <h4>Mandalam Member</h4>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" data-position="Mandalam Member" data-field="name" class="board-input" placeholder="Name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" data-position="Mandalam Member" data-field="phone" class="board-input" placeholder="Phone (optional)">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" data-position="Mandalam Member" data-field="email" class="board-input" placeholder="Email (optional)">
+              </div>
+            </div>
+          </div>
+
+          <!-- Assembly Members -->
+          <div class="board-member-section">
+            <h4>Assembly Members</h4>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" data-position="Assembly Members" data-field="name" class="board-input" placeholder="Name">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="tel" data-position="Assembly Members" data-field="phone" class="board-input" placeholder="Phone (optional)">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" data-position="Assembly Members" data-field="email" class="board-input" placeholder="Email (optional)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button type="submit" class="btn-primary">Save Contact Configuration</button>
+          <button type="button" id="loadContactBtn" class="btn-secondary">Load Current Configuration</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- User Approvals Tab -->
+    <div id="approvals-tab" class="tab-content">
+      <h2>User Approvals</h2>
+      <p style="color: #666; margin-bottom: 20px;">Review and approve users who have registered via Google sign-in. Users must be approved before they can access the directory and donations.</p>
+      
+      <div id="pendingUsersContainer">
+        <div class="loading-message">Loading pending users...</div>
+      </div>
+
+      <div id="allUsersSection" style="margin-top: 40px;">
+        <h3>All Registered Users</h3>
+        <div id="allUsersContainer">
+          <div class="loading-message">Loading users...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Announcements Tab -->
+    <div id="announcements-tab" class="tab-content">
+      <h2>Manage Announcements</h2>
+      <p style="color: #666; margin-bottom: 20px;">Manage two active announcements that will display in the mobile app based on their date ranges.</p>
+      
+      <form id="announcementsForm">
+        <!-- Announcement 1 -->
+        <div class="announcement-section">
+          <h3>Announcement 1</h3>
+          <input type="hidden" id="announcement1Id" name="announcement1Id">
+          
+          <div class="form-group">
+            <label for="announcement1Content">Announcement Text</label>
+            <textarea id="announcement1Content" name="announcement1Content" rows="4" 
+                      placeholder="Enter your announcement text here..." required></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="announcement1StartDate">Start Date</label>
+              <input type="datetime-local" id="announcement1StartDate" name="announcement1StartDate" required>
+            </div>
+
+            <div class="form-group">
+              <label for="announcement1EndDate">End Date</label>
+              <input type="datetime-local" id="announcement1EndDate" name="announcement1EndDate" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- Announcement 2 -->
+        <div class="announcement-section">
+          <h3>Announcement 2</h3>
+          <input type="hidden" id="announcement2Id" name="announcement2Id">
+          
+          <div class="form-group">
+            <label for="announcement2Content">Announcement Text</label>
+            <textarea id="announcement2Content" name="announcement2Content" rows="4" 
+                      placeholder="Enter your announcement text here..." required></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="announcement2StartDate">Start Date</label>
+              <input type="datetime-local" id="announcement2StartDate" name="announcement2StartDate" required>
+            </div>
+
+            <div class="form-group">
+              <label for="announcement2EndDate">End Date</label>
+              <input type="datetime-local" id="announcement2EndDate" name="announcement2EndDate" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button type="submit" class="btn-primary">Save Announcements</button>
+          <button type="button" id="loadAnnouncementsBtn" class="btn-secondary">Load Current Announcements</button>
+        </div>
+      </form>
+
+      <div id="announcementsResult" class="result-box"></div>
+    </div>
+
+    <!-- Church Directory Import Tab (3-Step Wizard) -->
+    <div id="directory-import-tab" class="tab-content">
+      <h2>Church Directory Import</h2>
+      <div class="upload-section">
+        <div class="info-box" style="margin-bottom: 20px;">
+          <h3>3-Step Import Process</h3>
+          <p>Import your church directory data from your backend software export files. This is a 3-step process:</p>
+          <ol style="margin-top: 10px; padding-left: 20px;">
+            <li><strong>Step 1:</strong> Upload Church Directory (ExportFile.xls) - Creates households and members</li>
+            <li><strong>Step 2:</strong> Upload Area Mapping (GroupsH.xls) - Assigns prayer group areas</li>
+            <li><strong>Step 3:</strong> Upload Donor Mapping (Envelope.xls) - Adds donor numbers</li>
+          </ol>
+          <p style="margin-top: 10px; color: #856404; background: #fff3cd; padding: 10px; border-radius: 5px;">
+            <strong>Note:</strong> Step 1 will replace all existing household and member data. Complete all three steps for full data import.
+          </p>
+        </div>
+
+        <!-- Step Progress Indicator -->
+        <div id="importStepIndicator" style="display: flex; justify-content: space-between; margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+          <div class="step-indicator" id="step1Indicator" style="text-align: center; flex: 1;">
+            <div style="width: 40px; height: 40px; border-radius: 50%; background: #C41E3A; color: white; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-weight: bold;">1</div>
+            <div style="font-size: 12px; color: #333;">Church Directory</div>
+          </div>
+          <div class="step-indicator" id="step2Indicator" style="text-align: center; flex: 1; opacity: 0.5;">
+            <div style="width: 40px; height: 40px; border-radius: 50%; background: #ccc; color: white; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-weight: bold;">2</div>
+            <div style="font-size: 12px; color: #666;">Area Mapping</div>
+          </div>
+          <div class="step-indicator" id="step3Indicator" style="text-align: center; flex: 1; opacity: 0.5;">
+            <div style="width: 40px; height: 40px; border-radius: 50%; background: #ccc; color: white; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-weight: bold;">3</div>
+            <div style="font-size: 12px; color: #666;">Donor Mapping</div>
+          </div>
+        </div>
+
+        <!-- Step 1: Church Directory Upload -->
+        <div id="step1Section" class="step-section" style="border: 2px solid #C41E3A; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="color: #C41E3A; margin-bottom: 15px;">Step 1: Upload Church Directory</h3>
+          <p style="margin-bottom: 15px; color: #555;">Upload the <strong>ExportFile.xls</strong> from your backend software. This file contains household and member information.</p>
+          <form id="churchDirectoryUploadForm">
+            <div class="form-group">
+              <label for="churchDirectoryFile">Select ExportFile.xls</label>
+              <input type="file" id="churchDirectoryFile" name="file" accept=".xlsx,.xls" required>
+            </div>
+            <button type="submit" class="btn-primary" id="churchDirectoryUploadBtn">Upload Church Directory</button>
+          </form>
+          <div id="churchDirectoryProgress" class="progress-container" style="display:none;">
+            <div class="progress-bar">
+              <div class="progress-fill" id="churchDirectoryProgressFill"></div>
+            </div>
+            <div class="progress-text" id="churchDirectoryProgressText">Uploading... 0%</div>
+          </div>
+          <div id="churchDirectoryResult" class="result-box"></div>
+        </div>
+
+        <!-- Step 2: Area Mapping Upload -->
+        <div id="step2Section" class="step-section" style="border: 2px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 20px; opacity: 0.5;">
+          <h3 style="color: #666; margin-bottom: 15px;">Step 2: Upload Area Mapping</h3>
+          <p style="margin-bottom: 15px; color: #555;">Upload the <strong>GroupsH.xls</strong> file to assign prayer group areas to households.</p>
+          <form id="areaMappingUploadForm">
+            <div class="form-group">
+              <label for="areaMappingFile">Select GroupsH.xls</label>
+              <input type="file" id="areaMappingFile" name="file" accept=".xlsx,.xls" disabled>
+            </div>
+            <button type="submit" class="btn-primary" id="areaMappingUploadBtn" disabled>Upload Area Mapping</button>
+          </form>
+          <div id="areaMappingProgress" class="progress-container" style="display:none;">
+            <div class="progress-bar">
+              <div class="progress-fill" id="areaMappingProgressFill"></div>
+            </div>
+            <div class="progress-text" id="areaMappingProgressText">Uploading... 0%</div>
+          </div>
+          <div id="areaMappingResult" class="result-box"></div>
+        </div>
+
+        <!-- Step 3: Donor Mapping Upload -->
+        <div id="step3Section" class="step-section" style="border: 2px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 20px; opacity: 0.5;">
+          <h3 style="color: #666; margin-bottom: 15px;">Step 3: Upload Donor Mapping</h3>
+          <p style="margin-bottom: 15px; color: #555;">Upload the <strong>Envelope.xls</strong> file to add donor numbers to households.</p>
+          <form id="donorMappingUploadForm">
+            <div class="form-group">
+              <label for="donorMappingFile">Select Envelope.xls</label>
+              <input type="file" id="donorMappingFile" name="file" accept=".xlsx,.xls" disabled>
+            </div>
+            <button type="submit" class="btn-primary" id="donorMappingUploadBtn" disabled>Upload Donor Mapping</button>
+          </form>
+          <div id="donorMappingProgress" class="progress-container" style="display:none;">
+            <div class="progress-bar">
+              <div class="progress-fill" id="donorMappingProgressFill"></div>
+            </div>
+            <div class="progress-text" id="donorMappingProgressText">Uploading... 0%</div>
+          </div>
+          <div id="donorMappingResult" class="result-box"></div>
+        </div>
+
+        <!-- Overall Import Status -->
+        <div id="importCompleteSection" style="display: none; padding: 20px; background: #d4edda; border: 1px solid #28a745; border-radius: 8px;">
+          <h3 style="color: #155724; margin-bottom: 10px;">Import Complete!</h3>
+          <p style="color: #155724;">All three steps have been completed successfully. Your church directory data has been fully imported.</p>
+          <button type="button" id="resetImportBtn" class="btn-secondary" style="margin-top: 15px;">Start New Import</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Donations Upload Tab -->
+    <div id="donations-tab" class="tab-content">
+      <h2>Upload Donations Data</h2>
+      <div class="upload-section">
+        <div class="info-box">
+          <h3>Supported Formats</h3>
+          <p style="margin-bottom: 15px;">The system automatically detects and accepts the following donation file formats:</p>
+          
+          <div style="background: #e8f5e9; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+            <h4 style="color: #2e7d32; margin-bottom: 8px;">Fund Activity Spreadsheet (Recommended)</h4>
+            <p style="font-size: 13px; color: #555;">Export directly from your backend software. Required columns:</p>
+            <ul style="font-size: 13px; margin-top: 5px;">
+              <li><strong>Fund Name</strong> - Category/fund name (e.g., "General Fund")</li>
+              <li><strong>Donor Number</strong> - Donor ID to link to household</li>
+              <li><strong>Giving Date</strong> - Date in MM/DD/YYYY format</li>
+              <li><strong>Amount</strong> - Donation amount</li>
+              <li><strong>Currency Type</strong> - Payment method (Check, EFT, Cash)</li>
+              <li><strong>Comment</strong> - Optional notes</li>
+            </ul>
+          </div>
+          
+          <div style="background: #f5f5f5; padding: 12px; border-radius: 6px;">
+            <h4 style="color: #666; margin-bottom: 8px;">Standard Template</h4>
+            <p style="font-size: 13px; color: #555;">Basic format with columns: household_id, donor_number, fund, amount, donation_date</p>
+          </div>
+          
+          <p style="margin-top: 15px; color: #666; font-size: 13px;">
+            <strong>Note:</strong> Uploading new data will replace all existing donation records.
+          </p>
+        </div>
+
+        <form id="donationsUploadForm">
+          <div class="form-group">
+            <label for="donationsFile">Select Excel or CSV File</label>
+            <input type="file" id="donationsFile" name="file" accept=".xlsx,.xls,.csv" required>
+          </div>
+          <button type="submit" class="btn-primary" id="donationsUploadBtn">Upload Donations</button>
+        </form>
+
+        <div id="donationsProgress" class="progress-container" style="display:none;">
+          <div class="progress-bar">
+            <div class="progress-fill" id="donationsProgressFill"></div>
+          </div>
+          <div class="progress-text" id="donationsProgressText">Uploading... 0%</div>
+        </div>
+
+        <div id="donationsResult" class="result-box"></div>
+      </div>
+    </div>
+
+    <!-- Admin Management Tab -->
+    <div id="admins-tab" class="tab-content">
+      <h2>Admin Management</h2>
+      <p style="color: #666; margin-bottom: 20px;">Manage administrator access for users. At least one admin must always remain.</p>
+      
+      <!-- Current Admins Section -->
+      <div style="margin-bottom: 40px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h3 style="margin: 0;">Current Administrators</h3>
+          <button type="button" id="refreshAdminsBtn" class="btn-secondary" style="padding: 8px 16px;">Refresh List</button>
+        </div>
+        
+        <div id="adminsList" style="background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <p style="color: #999; text-align: center;">Loading administrators...</p>
+        </div>
+      </div>
+
+      <!-- Grant Admin Access Section -->
+      <div style="margin-bottom: 40px;">
+        <h3>Grant Admin Access</h3>
+        <p style="color: #666; margin-bottom: 15px;">Select a user to grant administrator privileges.</p>
+        
+        <form id="grantAdminForm" style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div class="form-group">
+            <label for="userEmail">Enter Email Address</label>
+            <input type="email" id="userEmail" required placeholder="user@example.com" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+          </div>
+          
+          <button type="submit" class="btn-primary">Grant Admin Access</button>
+        </form>
+        
+        <div id="grantAdminResult" class="result-box"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="notification" class="notification"></div>
+
+  <script src="/admin/script.js"></script>
+</body>
+</html>

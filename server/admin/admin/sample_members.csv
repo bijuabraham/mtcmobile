@@ -1,0 +1,6 @@
+household_id,member_id,firstname,lastname,relationship,birth_date,wed_date,email,phone
+HH001,M001,John,Doe,Head,1980-05-15,2005-06-20,john.doe@example.com,555-1234
+HH001,M002,Jane,Doe,Spouse,1982-08-22,2005-06-20,jane.doe@example.com,555-1234
+HH001,M003,Johnny,Doe,Child,2010-03-10,,,
+HH002,M004,Michael,Smith,Head,1975-11-30,2000-05-15,michael.smith@example.com,555-5678
+HH002,M005,Sarah,Smith,Spouse,1977-02-14,2000-05-15,sarah.smith@example.com,555-5678
